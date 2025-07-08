@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Loader spinner untuk tombol */
+.loader {
+  display: inline-block;
+  border-radius: 50%;
+  border-width: 2px;
+  border-style: solid;
+  border-color: #fff #fff #fff transparent;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}

@@ -1,0 +1,187 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  transactions Transaction[]
+  goals        Goal[]
+  budgets      Budget[]
+  chatMessages ChatMessage[]
+  recurringTransactions RecurringTransaction[]
+  notifications Notification[]
+  preferences UserPreferences?
+
+  @@map("users")
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // "income" or "expense"
+  icon        String?
+  color       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  transactions Transaction[]
+  recurringTransactions RecurringTransaction[]
+  budgets Budget[]
+
+  @@unique([name, type])
+  @@map("categories")
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  amount      Float
+  description String
+  type        String   // "income" or "expense"
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  recurringTransactionId String?
+  recurringTransaction   RecurringTransaction? @relation(fields: [recurringTransactionId], references: [id])
+
+  @@map("transactions")
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  targetAmount Float
+  currentAmount Float  @default(0)
+  targetDate  DateTime?
+  isCompleted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("goals")
+}
+
+model Budget {
+  id          String   @id @default(cuid())
+  amount      Float
+  spent       Float    @default(0)
+  period      String   // "monthly", "weekly", "yearly"
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  @@map("budgets")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  message   String
+  response  String
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+model RecurringTransaction {
+  id          String   @id @default(cuid())
+  description String
+  amount      Float
+  type        String   // "income" or "expense"
+  frequency   String   // "daily", "weekly", "monthly", "yearly"
+  startDate   DateTime
+  endDate     DateTime?
+  isActive    Boolean  @default(true)
+  lastGenerated DateTime?
+  nextDueDate DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  transactions Transaction[]
+
+  @@map("recurring_transactions")
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  title       String
+  message     String
+  type        String   // "info", "warning", "success", "error", "budget_alert", "goal_reminder", "recurring_due"
+  isRead      Boolean  @default(false)
+  priority    String   @default("medium") // "low", "medium", "high", "urgent"
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  metadata    Json?    // Additional data like budgetId, goalId, etc.
+
+  @@map("notifications")
+}
+
+model UserPreferences {
+  id          String   @id @default(cuid())
+  dashboardLayout String @default("default")
+  defaultCurrency String @default("IDR")
+  language    String   @default("id")
+  theme       String   @default("light")
+  notificationSettings Json? // Email, push, inApp settings
+  financialGoals Json? // Monthly savings target, emergency fund, investment percentage
+  spendingCategories String[] @default([])
+  favoriteFeatures String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
