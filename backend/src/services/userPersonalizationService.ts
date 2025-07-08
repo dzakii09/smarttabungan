@@ -85,7 +85,17 @@ class UserPersonalizationService {
         });
       }
 
-      return preferences as UserPreferences;
+      return {
+        userId: preferences.userId,
+        dashboardLayout: preferences.dashboardLayout,
+        defaultCurrency: preferences.defaultCurrency,
+        language: preferences.language,
+        theme: preferences.theme as 'light' | 'dark' | 'auto',
+        notificationSettings: preferences.notificationSettings as UserPreferences['notificationSettings'],
+        financialGoals: preferences.financialGoals as UserPreferences['financialGoals'],
+        spendingCategories: preferences.spendingCategories,
+        favoriteFeatures: preferences.favoriteFeatures
+      };
     } catch (error) {
       console.error('Error getting user preferences:', error);
       throw error;
@@ -126,7 +136,17 @@ class UserPersonalizationService {
         }
       });
 
-      return preferences as UserPreferences;
+      return {
+        userId: preferences.userId,
+        dashboardLayout: preferences.dashboardLayout,
+        defaultCurrency: preferences.defaultCurrency,
+        language: preferences.language,
+        theme: preferences.theme as 'light' | 'dark' | 'auto',
+        notificationSettings: preferences.notificationSettings as UserPreferences['notificationSettings'],
+        financialGoals: preferences.financialGoals as UserPreferences['financialGoals'],
+        spendingCategories: preferences.spendingCategories,
+        favoriteFeatures: preferences.favoriteFeatures
+      };
     } catch (error) {
       console.error('Error updating user preferences:', error);
       throw error;
@@ -259,6 +279,7 @@ class UserPersonalizationService {
       });
 
       const totalIncome = incomeTransactions.reduce((sum, t) => sum + t.amount, 0);
+      const savings = totalIncome - totalSpending;
       const monthlySavingsRate = totalIncome > 0 ? (savings / totalIncome) * 100 : 0;
 
       // Calculate financial health score

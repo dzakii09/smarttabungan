@@ -14,6 +14,10 @@ import notificationRoutes from './routes/notifications'
 import scheduledNotificationRoutes from './routes/scheduledNotifications'
 import personalizationRoutes from './routes/personalization'
 import exportRoutes from './routes/export'
+import bankIntegrationRoutes from './routes/bankIntegration'
+import paymentGatewayRoutes from './routes/paymentGateway'
+import dataImportExportRoutes from './routes/dataImportExport'
+import externalAPIRoutes from './routes/externalAPI'
 
 dotenv.config()
 
@@ -38,6 +42,10 @@ app.use('/api/notifications', notificationRoutes)
 app.use('/api/scheduled-notifications', scheduledNotificationRoutes)
 app.use('/api/personalization', personalizationRoutes)
 app.use('/api/export', exportRoutes)
+app.use('/api/bank', bankIntegrationRoutes)
+app.use('/api/payment', paymentGatewayRoutes)
+app.use('/api/data', dataImportExportRoutes)
+app.use('/api/external', externalAPIRoutes)
 
 // Health check
 app.get('/api/health', (req, res) => {

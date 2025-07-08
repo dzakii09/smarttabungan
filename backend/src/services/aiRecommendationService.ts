@@ -1,5 +1,6 @@
 import prisma from '../utils/database';
 import userPersonalizationService from './userPersonalizationService';
+import geminiAIService from './geminiAIService';
 
 interface FinancialRecommendation {
   id: string;
@@ -29,8 +30,6 @@ class AIRecommendationService {
   // Get personalized AI recommendations
   async getPersonalizedRecommendations(userId: string): Promise<FinancialRecommendation[]> {
     try {
-      const recommendations: FinancialRecommendation[] = [];
-      
       // Get user data
       const [transactions, goals, budgets, preferences] = await Promise.all([
         this.getRecentTransactions(userId),
@@ -39,6 +38,36 @@ class AIRecommendationService {
         userPersonalizationService.getUserPreferences(userId)
       ]);
 
+      // Try Gemini AI first
+      if (geminiAIService.isAvailable()) {
+        try {
+          const financialData = { transactions, goals, budgets, preferences };
+          const aiResponse = await geminiAIService.generatePersonalizedRecommendations(userId, financialData);
+          
+          if (aiResponse.recommendations && aiResponse.recommendations.length > 0) {
+            return aiResponse.recommendations.map((rec: any) => ({
+              id: rec.id || `rec_${Date.now()}`,
+              type: rec.type || 'general',
+              title: rec.title,
+              description: rec.description,
+              priority: rec.priority || 'medium',
+              impact: rec.impact || 'medium',
+              estimatedSavings: rec.estimatedSavings || 0,
+              estimatedTime: rec.estimatedTime || '1-3 bulan',
+              difficulty: rec.difficulty || 'medium',
+              category: rec.category,
+              actionable: rec.actionable !== false,
+              metadata: rec.metadata || {}
+            }));
+          }
+        } catch (error) {
+          console.error('Error with Gemini AI, falling back to rule-based:', error);
+        }
+      }
+
+      // Fallback to rule-based recommendations
+      const recommendations: FinancialRecommendation[] = [];
+      
       // Analyze spending patterns
       const spendingAnalysis = await this.analyzeSpendingPatterns(userId, transactions);
       

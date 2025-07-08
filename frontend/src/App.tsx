@@ -13,6 +13,10 @@ import Notifications from './pages/Notifications';
 import { RecurringTransactions } from './pages/RecurringTransactions';
 import AIRecommendations from './pages/AIRecommendations';
 import UserPreferences from './pages/UserPreferences';
+import BankIntegration from './pages/BankIntegration';
+import PaymentGateway from './pages/PaymentGateway';
+import DataImportExport from './pages/DataImportExport';
+import ExternalServices from './pages/ExternalServices';
 import { Toaster } from 'sonner';
 
 // Protected Route Component
@@ -79,6 +83,26 @@ const AppRoutes: React.FC = () => {
               <Route path="/preferences" element={
                 <ProtectedRoute>
                   <UserPreferences />
+                </ProtectedRoute>
+              } />
+              <Route path="/bank-integration" element={
+                <ProtectedRoute>
+                  <BankIntegration />
+                </ProtectedRoute>
+              } />
+              <Route path="/payment-gateway" element={
+                <ProtectedRoute>
+                  <PaymentGateway />
+                </ProtectedRoute>
+              } />
+              <Route path="/data-import-export" element={
+                <ProtectedRoute>
+                  <DataImportExport />
+                </ProtectedRoute>
+              } />
+              <Route path="/external-services" element={
+                <ProtectedRoute>
+                  <ExternalServices />
                 </ProtectedRoute>
               } />
               <Route path="/settings" element={

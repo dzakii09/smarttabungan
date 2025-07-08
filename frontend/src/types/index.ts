@@ -50,6 +50,13 @@ export interface ChatMessage {
   timestamp: string;
 }
 
+export interface UserContext {
+  userId: string;
+  userData?: any;
+  recommendations?: any[];
+  insights?: any;
+}
+
 export interface DashboardStats {
   totalBalance: number;
   monthlyIncome: number;

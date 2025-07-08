@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, AlertCircle, Lightbulb, TrendingUp } from 'lucide-react';
+import { Send, Bot, User, Sparkles, AlertCircle, Lightbulb, TrendingUp, Target, PiggyBank } from 'lucide-react';
 import { ChatMessage } from '../../types';
 import { filterFinancialTopic, validateChatbotInput } from '../../utils/chatbotFilters';
 import { AIResponseGenerator } from '../../utils/aiResponseGenerator';
 import chatbotService from '../../services/chatbotService';
 import { useApp } from '../../contexts/AppContext';
+import api from '../../api';
 
 const ChatInterface: React.FC = () => {
-  const { user } = useApp();
+  const { user, token } = useApp();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -22,6 +23,7 @@ const ChatInterface: React.FC = () => {
   const [filterWarning, setFilterWarning] = useState<string | null>(null);
   const [suggestedTopics, setSuggestedTopics] = useState<string[]>([]);
   const [insights, setInsights] = useState<string[]>([]);
+  const [userContext, setUserContext] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const aiGenerator = useRef(new AIResponseGenerator());
 
@@ -35,15 +37,47 @@ const ChatInterface: React.FC = () => {
 
   useEffect(() => {
     // Initialize AI generator with user context
-    if (user) {
+    if (user && token) {
       initializeUserContext();
     }
-  }, [user]);
+  }, [user, token]);
 
   const initializeUserContext = async () => {
     try {
-      const context = await chatbotService.getUserContext();
+      const [context, recommendations, insights] = await Promise.all([
+        chatbotService.getUserContext(),
+        api.get('/personalization/recommendations', {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        api.get('/personalization/insights', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+
+      const recommendationsData = (recommendations.data as any).data || recommendations.data;
+      const insightsData = (insights.data as any).data || insights.data;
+
+      const enhancedContext = {
+        userId: user?.id || '',
+        userData: context,
+        recommendations: recommendationsData || [],
+        insights: insightsData || null
+      };
+
+      setUserContext(enhancedContext);
+
       aiGenerator.current.setUserContext(context);
+
+      // Add personalized welcome message if user has data
+      if (recommendationsData && recommendationsData.length > 0) {
+        const personalizedMessage: ChatMessage = {
+          id: '2',
+          message: `Saya melihat Anda memiliki ${recommendationsData.length} rekomendasi keuangan yang bisa saya bantu jelaskan. Anda juga bisa bertanya tentang situasi keuangan Anda secara spesifik.`,
+          sender: 'bot',
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, personalizedMessage]);
+      }
     } catch (error) {
       console.error('Failed to initialize user context:', error);
     }
@@ -85,8 +119,8 @@ const ChatInterface: React.FC = () => {
     setIsTyping(true);
 
     try {
-      // Generate AI response with context
-      const aiResponse = aiGenerator.current.generateResponse(inputMessage);
+      // Generate AI response with enhanced context
+      const aiResponse = await generateEnhancedResponse(inputMessage);
       
       // Simulate typing delay
       setTimeout(() => {
@@ -121,6 +155,108 @@ const ChatInterface: React.FC = () => {
     }
   };
 
+  const generateEnhancedResponse = async (message: string) => {
+    // Check if message is about recommendations
+    if (message.toLowerCase().includes('rekomendasi') || message.toLowerCase().includes('saran')) {
+      return generateRecommendationResponse();
+    }
+
+    // Check if message is about financial health
+    if (message.toLowerCase().includes('kesehatan') || message.toLowerCase().includes('score') || message.toLowerCase().includes('skor')) {
+      return generateFinancialHealthResponse();
+    }
+
+    // Check if message is about spending patterns
+    if (message.toLowerCase().includes('pengeluaran') || message.toLowerCase().includes('spending')) {
+      return generateSpendingAnalysisResponse();
+    }
+
+    // Default AI response
+    return aiGenerator.current.generateResponse(message);
+  };
+
+  const generateRecommendationResponse = () => {
+    if (!userContext?.recommendations || userContext.recommendations.length === 0) {
+      return {
+        message: 'Saat ini belum ada rekomendasi khusus untuk Anda. Coba tambahkan lebih banyak transaksi dan data keuangan untuk mendapatkan rekomendasi yang personal.',
+        suggestions: ['Bagaimana cara menambah transaksi?', 'Apa itu budget?', 'Bagaimana cara menabung efektif?'],
+        insights: []
+      };
+    }
+
+    const topRecommendations = userContext.recommendations.slice(0, 3);
+    const recommendationText = topRecommendations.map((rec: any, index: number) => 
+      `${index + 1}. ${rec.title}: ${rec.description}`
+    ).join('\n\n');
+
+    return {
+      message: `Berikut adalah rekomendasi teratas untuk Anda:\n\n${recommendationText}\n\nApakah Anda ingin saya jelaskan lebih detail tentang salah satu rekomendasi di atas?`,
+      suggestions: topRecommendations.map((rec: any) => `Jelaskan tentang ${rec.title}`),
+      insights: []
+    };
+  };
+
+  const generateFinancialHealthResponse = () => {
+    if (!userContext?.insights) {
+      return {
+        message: 'Saya belum bisa menganalisis kesehatan keuangan Anda karena data yang terbatas. Coba tambahkan lebih banyak transaksi untuk mendapatkan analisis yang akurat.',
+        suggestions: ['Bagaimana cara menambah transaksi?', 'Apa itu kesehatan keuangan?'],
+        insights: []
+      };
+    }
+
+    const health = userContext.insights.financialHealth;
+    const score = health.score;
+    let status = '';
+    let advice = '';
+
+    if (score >= 80) {
+      status = 'Sangat Baik';
+      advice = 'Anda memiliki kesehatan keuangan yang sangat baik! Pertahankan kebiasaan keuangan yang sudah ada.';
+    } else if (score >= 60) {
+      status = 'Baik';
+      advice = 'Kesehatan keuangan Anda baik, namun masih ada ruang untuk perbaikan.';
+    } else {
+      status = 'Perlu Perbaikan';
+      advice = 'Kesehatan keuangan Anda perlu perbaikan. Fokus pada menabung dan mengurangi pengeluaran.';
+    }
+
+    return {
+      message: `Skor Kesehatan Keuangan Anda: ${score}/100 (${status})\n\n${advice}\n\nRekomendasi:\n${health.recommendations.slice(0, 3).map((rec: string) => `• ${rec}`).join('\n')}`,
+      suggestions: ['Bagaimana cara meningkatkan skor?', 'Apa arti skor ini?', 'Rekomendasi lainnya'],
+      insights: health.recommendations
+    };
+  };
+
+  const generateSpendingAnalysisResponse = () => {
+    if (!userContext?.insights) {
+      return {
+        message: 'Saya belum bisa menganalisis pola pengeluaran Anda karena data yang terbatas. Coba tambahkan lebih banyak transaksi untuk mendapatkan analisis yang akurat.',
+        suggestions: ['Bagaimana cara menambah transaksi?', 'Apa itu analisis pengeluaran?'],
+        insights: []
+      };
+    }
+
+    const patterns = userContext.insights.spendingPatterns;
+    const topCategory = patterns.topCategories[0];
+    const trend = patterns.spendingTrend;
+
+    let trendText = '';
+    if (trend === 'increasing') {
+      trendText = 'Pengeluaran Anda cenderung meningkat.';
+    } else if (trend === 'decreasing') {
+      trendText = 'Pengeluaran Anda cenderung menurun - bagus!';
+    } else {
+      trendText = 'Pengeluaran Anda relatif stabil.';
+    }
+
+    return {
+      message: `Analisis Pengeluaran Anda:\n\n${trendText}\n\nKategori pengeluaran terbesar: ${topCategory?.category || 'Tidak ada data'} (${topCategory?.percentage?.toFixed(1) || 0}%)\n\nRata-rata pengeluaran harian: Rp ${patterns.averageDailySpending?.toLocaleString() || 0}\nRata-rata pengeluaran bulanan: Rp ${patterns.averageMonthlySpending?.toLocaleString() || 0}`,
+      suggestions: ['Bagaimana cara mengurangi pengeluaran?', 'Tips mengatur budget', 'Analisis kategori lainnya'],
+      insights: []
+    };
+  };
+
   const handleQuickQuestion = (question: string) => {
     setInputMessage(question);
   };
@@ -135,6 +271,14 @@ const ChatInterface: React.FC = () => {
     setSuggestedTopics([]);
     setInsights([]);
   };
+
+  const quickQuestions = [
+    'Bagaimana cara menabung efektif?',
+    'Apa itu dana darurat?',
+    'Bagaimana cara membuat budget?',
+    'Tips investasi untuk pemula',
+    'Bagaimana cara mengurangi pengeluaran?'
+  ];
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 h-[600px] flex flex-col">
@@ -200,105 +344,16 @@ const ChatInterface: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Validation Error */}
-      {validationError && (
-        <div className="px-4 py-2 bg-red-50 border-l-4 border-red-400">
-          <div className="flex items-center space-x-2">
-            <AlertCircle size={16} className="text-red-400" />
-            <p className="text-sm text-red-700">{validationError}</p>
-            <button
-              onClick={clearWarnings}
-              className="ml-auto text-red-400 hover:text-red-600"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Filter Warning */}
-      {filterWarning && (
-        <div className="px-4 py-2 bg-yellow-50 border-l-4 border-yellow-400">
-          <div className="flex items-center space-x-2">
-            <AlertCircle size={16} className="text-yellow-400" />
-            <p className="text-sm text-yellow-700">{filterWarning}</p>
-            <button
-              onClick={clearWarnings}
-              className="ml-auto text-yellow-400 hover:text-yellow-600"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Insights */}
-      {insights.length > 0 && (
-        <div className="px-4 py-2 bg-blue-50 border-l-4 border-blue-400">
-          <div className="flex items-start space-x-2">
-            <TrendingUp size={16} className="text-blue-400 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-blue-700 mb-1">Insight Keuangan:</p>
-              <ul className="text-sm text-blue-600 space-y-1">
-                {insights.map((insight, index) => (
-                  <li key={index}>• {insight}</li>
-                ))}
-              </ul>
-            </div>
-            <button
-              onClick={clearWarnings}
-              className="text-blue-400 hover:text-blue-600"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Suggestions */}
-      {suggestedTopics.length > 0 && (
-        <div className="px-4 py-2 bg-green-50 border-l-4 border-green-400">
-          <div className="flex items-start space-x-2">
-            <Lightbulb size={16} className="text-green-400 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-green-700 mb-2">Saran Tindakan:</p>
-              <div className="grid grid-cols-1 gap-1">
-                {suggestedTopics.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="text-left p-2 text-sm bg-green-100 hover:bg-green-200 rounded-lg transition-colors text-green-700"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <button
-              onClick={clearWarnings}
-              className="text-green-400 hover:text-green-600"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Quick Questions */}
-      {messages.length === 1 && (
+      {messages.length <= 2 && (
         <div className="p-4 border-t border-neutral-100">
-          <p className="text-sm text-neutral-600 mb-3">Pertanyaan populer:</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {[
-              'Bagaimana cara membuat budget yang efektif?',
-              'Tips menabung untuk pemula',
-              'Investasi apa yang cocok untuk pemula?',
-              'Cara melunasi utang dengan cepat'
-            ].map((question, index) => (
+          <p className="text-xs text-neutral-500 mb-2">Pertanyaan Cepat:</p>
+          <div className="flex flex-wrap gap-2">
+            {quickQuestions.map((question, index) => (
               <button
                 key={index}
                 onClick={() => handleQuickQuestion(question)}
-                className="text-left p-2 text-sm bg-neutral-50 hover:bg-neutral-100 rounded-lg transition-colors"
+                className="px-3 py-1 text-xs bg-neutral-100 text-neutral-700 rounded-full hover:bg-neutral-200 transition-colors"
               >
                 {question}
               </button>
@@ -307,23 +362,88 @@ const ChatInterface: React.FC = () => {
         </div>
       )}
 
-      {/* Input */}
+      {/* Suggestions */}
+      {suggestedTopics.length > 0 && (
+        <div className="p-4 border-t border-neutral-100">
+          <p className="text-xs text-neutral-500 mb-2">Saran Pertanyaan:</p>
+          <div className="flex flex-wrap gap-2">
+            {suggestedTopics.map((topic, index) => (
+              <button
+                key={index}
+                onClick={() => handleSuggestionClick(topic)}
+                className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
+              >
+                {topic}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Insights */}
+      {insights.length > 0 && (
+        <div className="p-4 border-t border-neutral-100 bg-yellow-50">
+          <div className="flex items-center space-x-2 mb-2">
+            <Lightbulb size={16} className="text-yellow-600" />
+            <p className="text-xs font-medium text-yellow-800">Insights:</p>
+          </div>
+          <div className="space-y-1">
+            {insights.slice(0, 3).map((insight, index) => (
+              <p key={index} className="text-xs text-yellow-700">• {insight}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Input Area */}
       <div className="p-4 border-t border-neutral-100">
-        <div className="flex space-x-2">
+        {/* Error/Warning Messages */}
+        {validationError && (
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <AlertCircle size={16} className="text-red-600" />
+              <p className="text-sm text-red-700">{validationError}</p>
+            </div>
+            <button
+              onClick={clearWarnings}
+              className="mt-2 text-xs text-red-600 hover:text-red-700 underline"
+            >
+              Tutup
+            </button>
+          </div>
+        )}
+
+        {filterWarning && (
+          <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <AlertCircle size={16} className="text-yellow-600" />
+              <p className="text-sm text-yellow-700">{filterWarning}</p>
+            </div>
+            <button
+              onClick={clearWarnings}
+              className="mt-2 text-xs text-yellow-600 hover:text-yellow-700 underline"
+            >
+              Tutup
+            </button>
+          </div>
+        )}
+
+        {/* Input Field */}
+        <div className="flex space-x-3">
           <input
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
             placeholder="Tanyakan tentang keuangan Anda..."
-            className="flex-1 px-4 py-2 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
           <button
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isTyping}
-            className="px-4 py-2 bg-primary-500 text-white rounded-xl hover:bg-primary-600 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Send size={20} />
+            <Send size={16} />
           </button>
         </div>
       </div>

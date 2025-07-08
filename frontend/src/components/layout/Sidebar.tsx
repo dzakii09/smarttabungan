@@ -11,7 +11,11 @@ import {
   LogOut,
   Repeat,
   Lightbulb,
-  User
+  User,
+  Building2,
+  CreditCard as PaymentIcon,
+  FileSpreadsheet,
+  Globe
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
@@ -29,6 +33,10 @@ const Sidebar: React.FC = () => {
     { icon: TrendingUp, label: 'Analisis', path: '/analytics' },
     { icon: MessageCircle, label: 'Chat AI', path: '/chatbot' },
     { icon: Lightbulb, label: 'AI Recommendations', path: '/ai-recommendations' },
+    { icon: Building2, label: 'Bank Integration', path: '/bank-integration' },
+    { icon: PaymentIcon, label: 'Payment Gateway', path: '/payment-gateway' },
+    { icon: FileSpreadsheet, label: 'Data Import/Export', path: '/data-import-export' },
+    { icon: Globe, label: 'External Services', path: '/external-services' },
   ];
 
   const handleLogout = () => {

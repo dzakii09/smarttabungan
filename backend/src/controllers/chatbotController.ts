@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/database';
+import geminiAIService from '../services/geminiAIService';
 
 export const sendMessage = async (req: Request, res: Response) => {
   try {
@@ -17,8 +18,8 @@ export const sendMessage = async (req: Request, res: Response) => {
     // Get user context for personalized responses
     const userContext = await getUserContext(userId);
     
-    // Generate AI response (simplified for now)
-    const aiResponse = generateAIResponse(message, userContext);
+    // Generate AI response using Gemini
+    const aiResponse = await generateAIResponse(message, userContext);
 
     // Store conversation in database (optional)
     await prisma.chatMessage.create({
@@ -87,9 +88,7 @@ async function getUserContext(userId: string) {
     prisma.goal.findMany({
       where: { userId }
     }),
-    prisma.category.findMany({
-      where: { userId }
-    })
+    prisma.category.findMany()
   ]);
 
   // Calculate financial metrics
@@ -123,7 +122,22 @@ async function getUserContext(userId: string) {
   };
 }
 
-function generateAIResponse(message: string, userContext: any) {
+async function generateAIResponse(message: string, userContext: any) {
+  // Try Gemini AI first
+  if (geminiAIService.isAvailable()) {
+    try {
+      const aiResponse = await geminiAIService.generateChatbotResponse(message, userContext);
+      return {
+        message: aiResponse.message,
+        suggestions: aiResponse.suggestions || [],
+        insights: aiResponse.insights || []
+      };
+    } catch (error) {
+      console.error('Error with Gemini AI, falling back to rule-based:', error);
+    }
+  }
+
+  // Fallback to rule-based response
   const input = message.toLowerCase();
   
   // Simple keyword-based response generation

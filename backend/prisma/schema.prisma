@@ -29,6 +29,10 @@ model User {
   recurringTransactions RecurringTransaction[]
   notifications Notification[]
   preferences UserPreferences?
+  bankAccounts BankAccount[]
+  paymentTransactions PaymentTransaction[]
+  externalServices ExternalService[]
+  dataImports DataImport[]
 
   @@map("users")
 }
@@ -184,4 +188,97 @@ model UserPreferences {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_preferences")
+}
+
+model BankAccount {
+  id              String   @id @default(cuid())
+  userId          String
+  bankName        String
+  accountNumber   String
+  accountType     String
+  balance         Float    @default(0)
+  currency        String   @default("IDR")
+  isActive        Boolean  @default(true)
+  lastSync        DateTime?
+  syncFrequency   String   @default("daily")
+  apiCredentials  Json?    // Encrypted API credentials
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    BankTransaction[]
+
+  @@map("bank_accounts")
+}
+
+model BankTransaction {
+  id              String   @id @default(cuid())
+  bankAccountId   String
+  externalId      String   @unique
+  amount          Float
+  type            String   // credit/debit
+  description     String
+  category        String?
+  date            DateTime
+  balance         Float
+  isSynced        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  bankAccount     BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+
+  @@map("bank_transactions")
+}
+
+model PaymentTransaction {
+  id              String   @id @default(cuid())
+  userId          String
+  amount          Float
+  currency        String   @default("IDR")
+  paymentMethod   String
+  status          String   // pending/success/failed
+  description     String
+  externalId      String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payment_transactions")
+}
+
+model ExternalService {
+  id              String   @id @default(cuid())
+  userId          String
+  serviceType     String   // bank/payment/currency/stock/weather/news
+  serviceName     String
+  isConnected     Boolean  @default(false)
+  lastSync        DateTime?
+  settings        Json?
+  apiKey          String?  // Encrypted API key
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("external_services")
+}
+
+model DataImport {
+  id              String   @id @default(cuid())
+  userId          String
+  fileName        String
+  fileType        String   // csv/excel/json
+  status          String   // processing/completed/failed
+  totalRecords    Int      @default(0)
+  processedRecords Int     @default(0)
+  errorCount      Int      @default(0)
+  errors          Json?    // Error details
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("data_imports")
 }

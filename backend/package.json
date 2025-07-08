@@ -14,8 +14,10 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.11.0",
     "@types/multer": "^2.0.0",
+    "@types/nodemailer": "^6.4.17",
     "@types/pdfkit": "^0.14.0",
     "@types/web-push": "^3.6.4",
     "bcryptjs": "^3.0.2",
@@ -26,6 +28,7 @@
     "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.1",
+    "nodemailer": "^7.0.5",
     "pdfkit": "^0.17.1",
     "prisma": "^6.11.0",
     "web-push": "^3.6.7",
