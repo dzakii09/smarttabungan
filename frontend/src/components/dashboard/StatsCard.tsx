@@ -1,11 +1,11 @@
 import React from 'react';
-import { DivideIcon as LucideIcon } from 'lucide-react';
+import { DollarSign as LucideIcon } from 'lucide-react';
 
 interface StatsCardProps {
   title: string;
   value: string | number;
   change?: number;
-  icon: LucideIcon;
+  icon: typeof LucideIcon;
   color: 'primary' | 'secondary' | 'accent' | 'neutral';
 }
 

@@ -10,7 +10,7 @@ import {
   CheckCircle,
   Clock,
   DollarSign,
-  Bank
+  Building2
 } from 'lucide-react';
 
 interface BankAccount {
@@ -257,7 +257,7 @@ const BankIntegration: React.FC = () => {
             <div key={account.id} className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <Bank className="w-8 h-8 text-blue-600 mr-3" />
+                  <Building2 className="w-8 h-8 text-blue-600 mr-3" />
                   <div>
                     <h3 className="font-semibold text-gray-900">{account.bankName}</h3>
                     <p className="text-sm text-gray-500">{account.accountNumber}</p>
@@ -334,7 +334,7 @@ const BankIntegration: React.FC = () => {
         {/* Empty State */}
         {accounts.length === 0 && (
           <div className="text-center py-12">
-            <Bank className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               Belum ada rekening bank terhubung
             </h3>

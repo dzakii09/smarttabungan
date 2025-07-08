@@ -4,7 +4,7 @@ import {
   CreditCard, 
   Wallet, 
   QrCode, 
-  Bank, 
+  Building2, 
   Store, 
   Plus,
   History,
@@ -201,18 +201,18 @@ const PaymentGateway: React.FC = () => {
 
   const getPaymentMethodIcon = (type: string) => {
     switch (type) {
+      case 'credit-card':
+        return <CreditCard className="w-6 h-6" />;
       case 'e-wallet':
         return <Wallet className="w-6 h-6" />;
       case 'bank-transfer':
-        return <Bank className="w-6 h-6" />;
+        return <Building2 className="w-6 h-6" />;
       case 'qris':
         return <QrCode className="w-6 h-6" />;
-      case 'credit-card':
-        return <CreditCard className="w-6 h-6" />;
-      case 'convenience-store':
+      case 'store':
         return <Store className="w-6 h-6" />;
       default:
-        return <CreditCard className="w-6 h-6" />;
+        return <Wallet className="w-6 h-6" />;
     }
   };
 
