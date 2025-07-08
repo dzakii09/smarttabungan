@@ -17,6 +17,7 @@ import BankIntegration from './pages/BankIntegration';
 import PaymentGateway from './pages/PaymentGateway';
 import DataImportExport from './pages/DataImportExport';
 import ExternalServices from './pages/ExternalServices';
+import SecuritySettings from './pages/SecuritySettings';
 import { Toaster } from 'sonner';
 
 // Protected Route Component
@@ -107,10 +108,7 @@ const AppRoutes: React.FC = () => {
               } />
               <Route path="/settings" element={
                 <ProtectedRoute>
-                  <div className="text-center py-20">
-                    <h2 className="text-2xl font-bold text-neutral-800 mb-4">Pengaturan</h2>
-                    <p className="text-neutral-600">Fitur ini sedang dalam pengembangan.</p>
-                  </div>
+                  <SecuritySettings />
                 </ProtectedRoute>
               } />
             </Routes>
