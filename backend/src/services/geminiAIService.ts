@@ -27,7 +27,7 @@ class GeminiAIService {
     }
 
     this.genAI = new GoogleGenerativeAI(apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.0-pro-latest' });
   }
 
   // Check if Gemini is available

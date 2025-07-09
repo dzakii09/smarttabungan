@@ -123,7 +123,7 @@ async function getUserContext(userId: string) {
 }
 
 async function generateAIResponse(message: string, userContext: any) {
-  // Try Gemini AI first
+  // Hanya gunakan Gemini AI, tanpa fallback manual
   if (geminiAIService.isAvailable()) {
     try {
       const aiResponse = await geminiAIService.generateChatbotResponse(message, userContext);
@@ -133,43 +133,20 @@ async function generateAIResponse(message: string, userContext: any) {
         insights: aiResponse.insights || []
       };
     } catch (error) {
-      console.error('Error with Gemini AI, falling back to rule-based:', error);
+      console.error('Error with Gemini AI:', error);
+      return {
+        message: 'Maaf, layanan AI sedang tidak tersedia. Silakan coba lagi nanti.',
+        suggestions: [],
+        insights: []
+      };
     }
+  } else {
+    return {
+      message: 'Maaf, layanan AI sedang tidak tersedia. Silakan coba lagi nanti.',
+      suggestions: [],
+      insights: []
+    };
   }
-
-  // Fallback to rule-based response
-  const input = message.toLowerCase();
-  
-  // Simple keyword-based response generation
-  if (input.includes('budget') || input.includes('anggaran')) {
-    return generateBudgetResponse(userContext);
-  }
-  
-  if (input.includes('tabung') || input.includes('saving')) {
-    return generateSavingResponse(userContext);
-  }
-  
-  if (input.includes('investasi') || input.includes('invest')) {
-    return generateInvestmentResponse(userContext);
-  }
-  
-  if (input.includes('analisis') || input.includes('laporan')) {
-    return generateAnalysisResponse(userContext);
-  }
-  
-  if (input.includes('tujuan') || input.includes('goal')) {
-    return generateGoalResponse(userContext);
-  }
-  
-  return {
-    message: 'Terima kasih atas pertanyaan Anda! Saya fokus membantu topik keuangan seperti budgeting, tabungan, investasi, perencanaan keuangan, dan manajemen utang. Bisakah Anda berikan pertanyaan yang lebih spesifik tentang keuangan pribadi Anda?',
-    suggestions: [
-      'Bagaimana cara membuat budget yang efektif?',
-      'Tips menabung untuk pemula',
-      'Investasi apa yang cocok untuk pemula?',
-      'Cara mengatur dana darurat'
-    ]
-  };
 }
 
 function generateBudgetResponse(userContext: any) {

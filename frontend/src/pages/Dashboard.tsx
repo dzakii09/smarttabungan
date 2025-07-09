@@ -175,20 +175,23 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center h-[60vh] bg-gradient-to-br from-primary-50 to-secondary-100 animate-fade-in">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-500 border-t-4 border-secondary-400"></div>
+          <div className="text-lg text-primary-700 font-semibold animate-pulse">Memuat dashboard...</div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-[60vh] bg-gradient-to-br from-primary-50 to-secondary-100 animate-fade-in">
         <div className="text-center">
-          <p className="text-red-600 mb-2">{error}</p>
+          <p className="text-red-600 mb-2 font-semibold">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-5 py-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-lg font-bold shadow hover:scale-105 transition-all"
           >
             Coba Lagi
           </button>
@@ -200,69 +203,23 @@ const Dashboard: React.FC = () => {
   const layoutConfig = getLayoutConfig();
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Welcome Header with Layout Settings */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">
-              Selamat Datang di SmartTabungan! 👋
-            </h1>
-            <p className="text-blue-100">
-              Berikut ringkasan keuangan Anda hari ini. Mari capai tujuan keuangan Anda bersama!
-            </p>
-          </div>
-          <button
-            onClick={() => setShowLayoutSettings(!showLayoutSettings)}
-            className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
-            title="Pengaturan Layout"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
+    <div className="min-h-screen bg-white py-8 px-2 md:px-8 animate-fade-in-up">
+      {/* Header */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-neutral-800 font-inter mb-1">Dashboard</h1>
+          <p className="text-neutral-500">Ringkasan keuangan dan insight terbaru Anda</p>
         </div>
-        
-        {/* Layout Settings Panel */}
-        {showLayoutSettings && (
-          <div className="mt-4 p-4 bg-white/10 rounded-lg">
-            <h3 className="font-semibold mb-3">Pilih Layout Dashboard</h3>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => updateLayoutPreference('default')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  preferences?.dashboardLayout === 'default'
-                    ? 'bg-white text-blue-600'
-                    : 'bg-white/20 hover:bg-white/30'
-                }`}
-              >
-                Default
-              </button>
-              <button
-                onClick={() => updateLayoutPreference('compact')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  preferences?.dashboardLayout === 'compact'
-                    ? 'bg-white text-blue-600'
-                    : 'bg-white/20 hover:bg-white/30'
-                }`}
-              >
-                Compact
-              </button>
-              <button
-                onClick={() => updateLayoutPreference('detailed')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  preferences?.dashboardLayout === 'detailed'
-                    ? 'bg-white text-blue-600'
-                    : 'bg-white/20 hover:bg-white/30'
-                }`}
-              >
-                Detailed
-              </button>
-            </div>
-          </div>
-        )}
+        <button
+          onClick={() => setShowLayoutSettings(true)}
+          className="px-4 py-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-xl font-bold shadow hover:scale-105 transition-all"
+        >
+          Pengaturan Tampilan
+        </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className={`grid ${layoutConfig.statsGrid}`}>
+      {/* Statistik */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatsCard
           title="Total Saldo"
           value={dashboardStats.totalBalance}
@@ -290,32 +247,59 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className={`grid ${layoutConfig.mainGrid}`}>
-        {/* Left Column - Charts */}
-        <div className={`${layoutConfig.leftColumn} space-y-6`}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left/Main Column */}
+        <div className="lg:col-span-2 space-y-8">
           <ExpenseChart />
-          {shouldShowComponent('transactions') && <RecentTransactions />}
+          <AnalyticsSummary />
+          <SpendingInsights />
+          <AdvancedCharts />
+          <MonthlyComparison />
+          <AIDashboard />
         </div>
-        
-        {/* Right Column - Goals, Categories & AI */}
-        <div className={layoutConfig.rightColumn}>
-          {shouldShowComponent('goals') && <GoalProgress />}
-          {shouldShowComponent('categories') && <CategoryStats />}
-          {shouldShowComponent('budgets') && <BudgetOverview />}
-          {shouldShowComponent('analytics') && <AnalyticsSummary />}
-          
-          {/* Charts Section - Always Show */}
-          <div className="space-y-6">
-            <AdvancedCharts />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <SpendingInsights />
-              <MonthlyComparison />
-            </div>
-          </div>
-          
-          {shouldShowComponent('ai-recommendations') && <AIDashboard />}
+        {/* Right/Sidebar Column */}
+        <div className="space-y-8">
+          <RecentTransactions />
+          <GoalProgress />
+          <BudgetOverview />
+          <CategoryStats />
         </div>
       </div>
+
+      {/* Pengaturan Layout Modal */}
+      {showLayoutSettings && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">Pengaturan Tampilan Dashboard</h3>
+            <div className="space-y-3">
+              <button
+                onClick={() => updateLayoutPreference('default')}
+                className="w-full px-4 py-3 rounded-xl border border-neutral-200 font-semibold hover:bg-primary-50 transition-all"
+              >
+                Default
+              </button>
+              <button
+                onClick={() => updateLayoutPreference('compact')}
+                className="w-full px-4 py-3 rounded-xl border border-neutral-200 font-semibold hover:bg-primary-50 transition-all"
+              >
+                Compact
+              </button>
+              <button
+                onClick={() => updateLayoutPreference('detailed')}
+                className="w-full px-4 py-3 rounded-xl border border-neutral-200 font-semibold hover:bg-primary-50 transition-all"
+              >
+                Detailed
+              </button>
+            </div>
+            <button
+              onClick={() => setShowLayoutSettings(false)}
+              className="mt-6 w-full px-4 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-bold shadow hover:scale-105 transition-all"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
