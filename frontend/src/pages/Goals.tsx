@@ -10,7 +10,7 @@ const Goals: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     id: '',
-    name: '',
+    title: '', // ganti dari name ke title
     targetAmount: '',
     currentAmount: '',
     targetDate: '',
@@ -27,7 +27,7 @@ const Goals: React.FC = () => {
   const handleEdit = (goal: any) => {
     setForm({
       id: goal.id,
-      name: goal.name,
+      title: goal.title, // ganti dari name ke title
       targetAmount: goal.targetAmount.toString(),
       currentAmount: goal.currentAmount.toString(),
       targetDate: goal.targetDate ? goal.targetDate.slice(0, 10) : '',
@@ -71,7 +71,7 @@ const Goals: React.FC = () => {
         toast.success('Goal berhasil ditambahkan');
       }
       setShowForm(false);
-      setForm({ id: '', name: '', targetAmount: '', currentAmount: '', targetDate: '', description: '' });
+      setForm({ id: '', title: '', targetAmount: '', currentAmount: '', targetDate: '', description: '' });
       await fetchGoals();
     } catch (err: any) {
       setError('Gagal menyimpan goal');
@@ -95,7 +95,7 @@ const Goals: React.FC = () => {
           <button
             className="bg-primary-500 text-white px-4 py-2 rounded-xl font-semibold hover:bg-primary-600"
             onClick={() => {
-              setForm({ id: '', name: '', targetAmount: '', currentAmount: '', targetDate: '', description: '' });
+              setForm({ id: '', title: '', targetAmount: '', currentAmount: '', targetDate: '', description: '' });
               setShowForm(true);
             }}
           >
@@ -108,7 +108,7 @@ const Goals: React.FC = () => {
         <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 shadow mb-8 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Nama Goal</label>
-            <input name="name" value={form.name} onChange={handleInput} className="w-full border rounded-xl px-3 py-2" required />
+            <input name="title" value={form.title} onChange={handleInput} className="w-full border rounded-xl px-3 py-2" required />
           </div>
           <div className="flex gap-4">
             <div className="flex-1">
@@ -147,7 +147,7 @@ const Goals: React.FC = () => {
           {goals.map((goal) => (
             <div key={goal.id} className="flex items-center justify-between py-3">
               <div>
-                <div className="font-medium text-neutral-800">{goal.name}</div>
+                <div className="font-medium text-neutral-800">{goal.title}</div>
                 <div className="text-sm text-neutral-500">Target: {goal.targetAmount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })} | Terkumpul: {goal.currentAmount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}</div>
                 <div className="text-xs text-neutral-400">{goal.targetDate && `Target: ${new Date(goal.targetDate).toLocaleDateString('id-ID')}`}</div>
               </div>
