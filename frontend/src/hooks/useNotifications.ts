@@ -6,7 +6,7 @@ interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'info' | 'warning' | 'success' | 'error' | 'budget_alert' | 'goal_reminder' | 'recurring_due';
+  type: 'info' | 'warning' | 'success' | 'error' | 'budget_alert' | 'goal_reminder';
   isRead: boolean;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   createdAt: string;
@@ -162,7 +162,6 @@ const getToastType = (type: string): 'success' | 'error' | 'warning' | 'info' =>
       return 'error';
     case 'warning':
     case 'budget_alert':
-    case 'recurring_due':
       return 'warning';
     default:
       return 'info';

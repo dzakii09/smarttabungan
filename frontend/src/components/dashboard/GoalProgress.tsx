@@ -1,6 +1,7 @@
 import React from 'react';
 import { Target, TrendingUp } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { Link } from 'react-router-dom';
 
 const GoalProgress: React.FC = () => {
   const { goals } = useApp();
@@ -20,9 +21,9 @@ const GoalProgress: React.FC = () => {
         <h3 className="text-lg font-semibold text-neutral-800 font-inter">
           Progress Tujuan Keuangan
         </h3>
-        <button className="text-primary-500 hover:text-primary-600 text-sm font-medium">
+        <Link to="/goals" className="text-primary-500 hover:text-primary-600 text-sm font-medium">
           Kelola
-        </button>
+        </Link>
       </div>
       
       <div className="space-y-6">
@@ -36,7 +37,7 @@ const GoalProgress: React.FC = () => {
                     <Target size={16} className="text-neutral-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-neutral-800">{goal.name || goal.title}</p>
+                    <p className="font-medium text-neutral-800">{goal.name}</p>
                     <p className="text-sm text-neutral-500">
                       {formatCurrency(goal.currentAmount)} dari {formatCurrency(goal.targetAmount)}
                     </p>
@@ -58,10 +59,10 @@ const GoalProgress: React.FC = () => {
             </div>
           );
         })}
-        <button className="w-full py-3 border-2 border-dashed border-neutral-200 rounded-xl text-neutral-500 hover:border-primary-300 hover:text-primary-600 transition-colors flex items-center justify-center space-x-2">
+        <Link to="/goals" className="w-full py-3 border-2 border-dashed border-neutral-200 rounded-xl text-neutral-500 hover:border-primary-300 hover:text-primary-600 transition-colors flex items-center justify-center space-x-2">
           <TrendingUp size={20} />
           <span>Tambah Tujuan Baru</span>
-        </button>
+        </Link>
       </div>
     </div>
   );

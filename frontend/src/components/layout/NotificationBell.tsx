@@ -7,7 +7,7 @@ interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'info' | 'warning' | 'success' | 'error' | 'budget_alert' | 'goal_reminder' | 'recurring_due';
+  type: 'info' | 'warning' | 'success' | 'error' | 'budget_alert' | 'goal_reminder';
   isRead: boolean;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   createdAt: string;
@@ -38,8 +38,6 @@ const NotificationBell: React.FC = () => {
         return <AlertCircle className="w-4 h-4 text-red-500" />;
       case 'goal_reminder':
         return <CheckCircle className="w-4 h-4 text-blue-500" />;
-      case 'recurring_due':
-        return <AlertTriangle className="w-4 h-4 text-orange-500" />;
       default:
         return <Info className="w-4 h-4 text-blue-500" />;
     }

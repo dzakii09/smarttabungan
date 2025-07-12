@@ -223,42 +223,6 @@ class NotificationService {
     }
   }
 
-  // Recurring Transaction Due
-  async createRecurringDueAlert(userId: string, recurringId: string, description: string, amount: number, dueDate: Date) {
-    const daysUntilDue = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-
-    let priority: NotificationPriority = 'medium';
-    let message = '';
-
-    if (daysUntilDue <= 1) {
-      priority = 'urgent';
-      message = `Transaksi berulang "${description}" jatuh tempo besok! Jumlah: ${amount.toLocaleString('id-ID')}`;
-    } else if (daysUntilDue <= 3) {
-      priority = 'high';
-      message = `Transaksi berulang "${description}" jatuh tempo dalam ${daysUntilDue} hari. Jumlah: ${amount.toLocaleString('id-ID')}`;
-    } else if (daysUntilDue <= 7) {
-      priority = 'medium';
-      message = `Transaksi berulang "${description}" jatuh tempo dalam ${daysUntilDue} hari. Jumlah: ${amount.toLocaleString('id-ID')}`;
-    }
-
-    if (message) {
-      return this.createNotification({
-        userId,
-        title: 'Recurring Transaction Due',
-        message,
-        type: 'recurring_due',
-        priority,
-        metadata: {
-          recurringId,
-          description,
-          amount,
-          dueDate: dueDate.toISOString(),
-          daysUntilDue
-        }
-      });
-    }
-  }
-
   // Spending Pattern Alert
   async createSpendingPatternAlert(userId: string, categoryName: string, amount: number, averageAmount: number) {
     const increase = ((amount - averageAmount) / averageAmount) * 100;
@@ -530,9 +494,6 @@ class NotificationService {
       // Check budget alerts
       await this.checkBudgetAlerts(userId);
       
-      // Check bill reminders
-      await this.checkBillReminders(userId);
-      
       // Check savings goals
       await this.checkSavingsGoals(userId);
       
@@ -561,38 +522,6 @@ class NotificationService {
       }
     } catch (error) {
       console.error('Error checking budget alerts:', error);
-    }
-  }
-
-  // Check bill reminders
-  private async checkBillReminders(userId: string) {
-    try {
-      const today = new Date();
-      const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-      const bills = await prisma.recurringTransaction.findMany({
-        where: {
-          userId,
-          type: 'expense',
-          nextDueDate: {
-            gte: today,
-            lte: nextWeek
-          }
-        },
-        include: { category: true }
-      });
-
-      for (const bill of bills) {
-        await this.createBillReminderNotification(userId, {
-          id: bill.id,
-          title: bill.description,
-          amount: bill.amount,
-          dueDate: bill.nextDueDate,
-          category: bill.category
-        });
-      }
-    } catch (error) {
-      console.error('Error checking bill reminders:', error);
     }
   }
 

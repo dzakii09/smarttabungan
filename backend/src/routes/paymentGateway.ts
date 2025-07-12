@@ -16,12 +16,6 @@ router.get('/history', auth as any, paymentGatewayController.getPaymentHistory a
 // Get payment analytics
 router.get('/analytics', auth as any, paymentGatewayController.getPaymentAnalytics as any)
 
-// Setup recurring payment
-router.post('/recurring', auth as any, paymentGatewayController.setupRecurringPayment as any)
-
-// Cancel recurring payment
-router.delete('/recurring/:recurringId', auth as any, paymentGatewayController.cancelRecurringPayment as any)
-
 // Check payment status
 router.get('/status/:transactionId', auth as any, paymentGatewayController.checkPaymentStatus as any)
 

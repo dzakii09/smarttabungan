@@ -9,17 +9,22 @@ interface AuthRequest extends Request {
 
 export const createTransaction = async (req: AuthRequest, res: Response) => {
   try {
-    const { amount, description, type, categoryId, date } = req.body
-    const userId = req.user.userId
+    const { amount, description, categoryId, type, date } = req.body
+    const userId = req.user?.id
+
+    // Validasi userId
+    if (!userId) {
+      return res.status(401).json({ message: 'Gagal menyimpan transaksi' })
+    }
 
     const transaction = await prisma.transaction.create({
       data: {
         amount: parseFloat(amount),
         description,
         type,
-        categoryId,
         date: date ? new Date(date) : new Date(),
-        userId
+        userId,
+        categoryId
       },
       include: {
         category: true
@@ -62,18 +67,26 @@ export const createTransaction = async (req: AuthRequest, res: Response) => {
     })
   } catch (error) {
     console.error('Create transaction error:', error)
-    res.status(500).json({ message: 'Server error' })
+    res.status(500).json({ message: 'Gagal menyimpan transaksi' })
   }
 }
 
 export const getTransactions = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user.userId
-    const { type, limit = 10, offset = 0 } = req.query
+    const userId = req.user?.id
+    const { page = 1, limit = 10, type, categoryId, startDate, endDate } = req.query
+
+    const skip = (parseInt(page as string) - 1) * parseInt(limit as string)
 
     const where: any = { userId }
-    if (type) {
-      where.type = type
+
+    if (type) where.type = type
+    if (categoryId) where.categoryId = categoryId
+    if (startDate && endDate) {
+      where.date = {
+        gte: new Date(startDate as string),
+        lte: new Date(endDate as string)
+      }
     }
 
     const transactions = await prisma.transaction.findMany({
@@ -84,17 +97,20 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
       orderBy: {
         date: 'desc'
       },
-      take: parseInt(limit as string),
-      skip: parseInt(offset as string)
+      skip,
+      take: parseInt(limit as string)
     })
 
     const total = await prisma.transaction.count({ where })
 
     res.json({
       transactions,
-      total,
-      limit: parseInt(limit as string),
-      offset: parseInt(offset as string)
+      pagination: {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        total,
+        pages: Math.ceil(total / parseInt(limit as string))
+      }
     })
   } catch (error) {
     console.error('Get transactions error:', error)
@@ -105,7 +121,7 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
 export const getTransactionById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const userId = req.user.userId
+    const userId = req.user?.id
 
     const transaction = await prisma.transaction.findFirst({
       where: {
@@ -132,8 +148,8 @@ export const getTransactionById = async (req: AuthRequest, res: Response) => {
 export const updateTransaction = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const { amount, description, type, categoryId, date } = req.body
-    const userId = req.user.userId
+    const { amount, description, categoryId, type, date } = req.body
+    const userId = req.user?.id
 
     const transaction = await prisma.transaction.findFirst({
       where: {
@@ -153,8 +169,8 @@ export const updateTransaction = async (req: AuthRequest, res: Response) => {
         amount: amount ? parseFloat(amount) : undefined,
         description,
         type,
-        categoryId,
-        date: date ? new Date(date) : undefined
+        date: date ? new Date(date) : undefined,
+        categoryId
       },
       include: {
         category: true
@@ -174,7 +190,7 @@ export const updateTransaction = async (req: AuthRequest, res: Response) => {
 export const deleteTransaction = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const userId = req.user.userId
+    const userId = req.user?.id
 
     const transaction = await prisma.transaction.findFirst({
       where: {
@@ -201,10 +217,11 @@ export const deleteTransaction = async (req: AuthRequest, res: Response) => {
 
 export const getTransactionStats = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user.userId
+    const userId = req.user?.id
     const { startDate, endDate } = req.query
 
     const where: any = { userId }
+
     if (startDate && endDate) {
       where.date = {
         gte: new Date(startDate as string),
@@ -228,12 +245,58 @@ export const getTransactionStats = async (req: AuthRequest, res: Response) => {
     const balance = totalIncome - totalExpense
 
     res.json({
-      totalIncome,
-      totalExpense,
+      income: totalIncome,
+      expense: totalExpense,
       balance
     })
   } catch (error) {
-    console.error('Get stats error:', error)
+    console.error('Get transaction stats error:', error)
+    res.status(500).json({ message: 'Server error' })
+  }
+}
+
+export const getTransactionsByCategory = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id
+    const { startDate, endDate } = req.query
+
+    const where: any = { userId }
+
+    if (startDate && endDate) {
+      where.date = {
+        gte: new Date(startDate as string),
+        lte: new Date(endDate as string)
+      }
+    }
+
+    const transactions = await prisma.transaction.groupBy({
+      by: ['categoryId'],
+      where,
+      _sum: {
+        amount: true
+      },
+      _count: {
+        id: true
+      }
+    })
+
+    const categoryStats = await Promise.all(
+      transactions.map(async (transaction) => {
+        const category = await prisma.category.findUnique({
+          where: { id: transaction.categoryId }
+        })
+
+        return {
+          category,
+          totalAmount: transaction._sum.amount,
+          count: transaction._count.id
+        }
+      })
+    )
+
+    res.json(categoryStats)
+  } catch (error) {
+    console.error('Get transactions by category error:', error)
     res.status(500).json({ message: 'Server error' })
   }
 } 

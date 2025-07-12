@@ -44,7 +44,7 @@ class NotificationController {
   // Get user notifications
   async getUserNotifications(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const { limit = 50 } = req.query;
 
       if (!userId) {
@@ -72,7 +72,7 @@ class NotificationController {
   // Mark notification as read
   async markAsRead(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const { id } = req.params;
 
       if (!userId) {
@@ -101,7 +101,7 @@ class NotificationController {
   // Mark all notifications as read
   async markAllAsRead(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
 
       if (!userId) {
         return res.status(401).json({
@@ -128,7 +128,7 @@ class NotificationController {
   // Delete notification
   async deleteNotification(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const { id } = req.params;
 
       if (!userId) {
@@ -156,7 +156,7 @@ class NotificationController {
   // Get unread count
   async getUnreadCount(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
 
       if (!userId) {
         return res.status(401).json({
@@ -228,7 +228,7 @@ class NotificationController {
   // Check and create notifications
   async checkNotifications(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
 
       if (!userId) {
         return res.status(401).json({

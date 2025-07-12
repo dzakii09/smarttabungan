@@ -9,7 +9,12 @@ interface AuthRequest extends Request {
 export const createGoal = async (req: AuthRequest, res: Response) => {
   try {
     const { title, description, targetAmount, targetDate } = req.body
-    const userId = req.user.userId
+    const userId = req.user?.id
+
+    // Validasi userId
+    if (!userId) {
+      return res.status(401).json({ message: 'Gagal menyimpan goal' })
+    }
 
     const goal = await prisma.goal.create({
       data: {
@@ -39,13 +44,13 @@ export const createGoal = async (req: AuthRequest, res: Response) => {
     })
   } catch (error) {
     console.error('Create goal error:', error)
-    res.status(500).json({ message: 'Server error' })
+    res.status(500).json({ message: 'Gagal menyimpan goal' })
   }
 }
 
 export const getGoals = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user.userId
+    const userId = req.user?.id
 
     const goals = await prisma.goal.findMany({
       where: { userId },
@@ -64,7 +69,7 @@ export const getGoals = async (req: AuthRequest, res: Response) => {
 export const getGoalById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const userId = req.user.userId
+    const userId = req.user?.id
 
     const goal = await prisma.goal.findFirst({
       where: {
@@ -89,7 +94,7 @@ export const updateGoal = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
     const { title, description, targetAmount, targetDate, currentAmount, isCompleted } = req.body
-    const userId = req.user.userId
+    const userId = req.user?.id
 
     const goal = await prisma.goal.findFirst({
       where: {
@@ -128,7 +133,7 @@ export const updateGoal = async (req: AuthRequest, res: Response) => {
 export const deleteGoal = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const userId = req.user.userId
+    const userId = req.user?.id
 
     const goal = await prisma.goal.findFirst({
       where: {
@@ -157,7 +162,7 @@ export const updateGoalProgress = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
     const { currentAmount } = req.body
-    const userId = req.user.userId
+    const userId = req.user?.id
 
     const goal = await prisma.goal.findFirst({
       where: {
@@ -199,17 +204,9 @@ export const updateGoalProgress = async (req: AuthRequest, res: Response) => {
         // Near completion
         await notificationService.createSystemNotification(
           userId,
-          '🏆 Hampir Tercapai!',
-          `Tujuan "${goal.title}" sudah ${progress.toFixed(1)}% tercapai. Tinggal Rp ${(goal.targetAmount - newCurrentAmount).toLocaleString('id-ID')} lagi!`,
+          '🎯 Hampir Tercapai!',
+          `Tujuan "${goal.title}" sudah ${Math.round(progress)}% tercapai`,
           'medium'
-        );
-      } else if (progress >= 50 && progress < 75) {
-        // Good progress
-        await notificationService.createSystemNotification(
-          userId,
-          '📈 Progress Tujuan',
-          `Tujuan "${goal.title}" sudah ${progress.toFixed(1)}% tercapai`,
-          'low'
         );
       }
     } catch (notificationError) {

@@ -31,7 +31,6 @@ const Sidebar: React.FC = () => {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: CreditCard, label: 'Transaksi', path: '/transactions' },
-    { icon: Repeat, label: 'Transaksi Berulang', path: '/recurring-transactions' },
     { icon: PiggyBank, label: 'Anggaran', path: '/budgets' },
     { icon: Users, label: 'Group Budget', path: '/group-budgets' },
     { icon: Target, label: 'Tujuan Keuangan', path: '/goals' },

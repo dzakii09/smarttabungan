@@ -8,7 +8,6 @@ import categoryRoutes from './routes/categories'
 import budgetRoutes from './routes/budgets'
 import analyticsRoutes from './routes/analytics'
 import importExportRoutes from './routes/import'
-import recurringTransactionRoutes from './routes/recurringTransactions'
 import aiRoutes from './routes/ai'
 import notificationRoutes from './routes/notifications'
 import scheduledNotificationRoutes from './routes/scheduledNotifications'
@@ -37,7 +36,6 @@ app.use('/api/categories', categoryRoutes)
 app.use('/api/budgets', budgetRoutes)
 app.use('/api/analytics', analyticsRoutes)
 app.use('/api/import-export', importExportRoutes)
-app.use('/api/recurring-transactions', recurringTransactionRoutes)
 app.use('/api/ai', aiRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/scheduled-notifications', scheduledNotificationRoutes)

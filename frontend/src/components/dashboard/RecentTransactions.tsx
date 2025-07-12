@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowUpRight, ArrowDownLeft, ShoppingBag, Car, Utensils, DollarSign } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { Link } from 'react-router-dom';
 
 const RecentTransactions: React.FC = () => {
   const { transactions, categories } = useApp();
@@ -58,9 +59,9 @@ const RecentTransactions: React.FC = () => {
         <h3 className="text-lg font-semibold text-neutral-800 font-inter">
           Transaksi Terbaru
         </h3>
-        <button className="text-primary-500 hover:text-primary-600 text-sm font-medium">
+        <Link to="/transactions" className="text-primary-500 hover:text-primary-600 text-sm font-medium">
           Lihat Semua
-        </button>
+        </Link>
       </div>
       
       <div className="space-y-4">

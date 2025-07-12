@@ -12,7 +12,6 @@ import GroupBudgets from './pages/GroupBudgets';
 import GroupBudgetDetail from './pages/GroupBudgetDetail';
 import Analytics from './pages/Analytics';
 import Notifications from './pages/Notifications';
-import { RecurringTransactions } from './pages/RecurringTransactions';
 import AIRecommendations from './pages/AIRecommendations';
 import UserPreferences from './pages/UserPreferences';
 import BankIntegration from './pages/BankIntegration';
@@ -70,11 +69,6 @@ const AppRoutes: React.FC = () => {
               <Route path="/goals" element={
                 <ProtectedRoute>
                   <Goals />
-                </ProtectedRoute>
-              } />
-              <Route path="/recurring-transactions" element={
-                <ProtectedRoute>
-                  <RecurringTransactions />
                 </ProtectedRoute>
               } />
               <Route path="/analytics" element={<Analytics />} />

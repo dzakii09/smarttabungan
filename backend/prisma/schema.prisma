@@ -26,7 +26,6 @@ model User {
   goals                          Goal[]
   budgets                        Budget[]
   chatMessages                   ChatMessage[]
-  recurringTransactions          RecurringTransaction[]
   notifications                  Notification[]
   preferences                    UserPreferences?
   bankAccounts                   BankAccount[]
@@ -52,7 +51,6 @@ model Category {
   updatedAt DateTime @updatedAt
 
   transactions          Transaction[]
-  recurringTransactions RecurringTransaction[]
   budgets               Budget[]
   groupBudgets          GroupBudget[]          @relation("GroupBudgetCategory")
 
@@ -74,9 +72,6 @@ model Transaction {
 
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
-
-  recurringTransactionId String?
-  recurringTransaction   RecurringTransaction? @relation(fields: [recurringTransactionId], references: [id])
 
   @@map("transactions")
 }
@@ -247,31 +242,6 @@ model ChatMessage {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("chat_messages")
-}
-
-model RecurringTransaction {
-  id            String    @id @default(cuid())
-  description   String
-  amount        Float
-  type          String // "income" or "expense"
-  frequency     String // "daily", "weekly", "monthly", "yearly"
-  startDate     DateTime
-  endDate       DateTime?
-  isActive      Boolean   @default(true)
-  lastGenerated DateTime?
-  nextDueDate   DateTime
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  categoryId String?
-  category   Category? @relation(fields: [categoryId], references: [id])
-
-  transactions Transaction[]
-
-  @@map("recurring_transactions")
 }
 
 model Notification {
