@@ -130,6 +130,33 @@ class GeminiAIService {
     }
   }
 
+  // Tambahkan di dalam class GeminiAIService
+  async classifyReceipt(ocrText: string) {
+    if (!this.isAvailable()) {
+      return [];
+    }
+    try {
+      const prompt = `
+        Berikut adalah hasil OCR dari struk belanja:
+        "${ocrText}"
+
+        Tolong ekstrak daftar item, harga, dan klasifikasikan setiap item ke kategori (misal: makanan/minuman, kebutuhan rumah, kebersihan, dll).
+        Format output JSON: [{ "item": "...", "price": ..., "category": "..." }, ...]
+      `;
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text;
+      }
+    } catch (error) {
+      console.error('Error classifying receipt with Gemini:', error);
+      return [];
+    }
+  }
+
   // Build prompts for different use cases
   private buildFinancialInsightsPrompt(data: FinancialData): string {
     const { transactions, goals, budgets, preferences } = data;
