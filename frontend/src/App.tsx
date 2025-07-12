@@ -8,6 +8,7 @@ import Chatbot from './pages/Chatbot';
 import Transactions from './pages/Transactions';
 import Goals from './pages/Goals';
 import Budgets from './pages/Budgets';
+import GroupBudgets from './pages/GroupBudgets';
 import Analytics from './pages/Analytics';
 import Notifications from './pages/Notifications';
 import { RecurringTransactions } from './pages/RecurringTransactions';
@@ -53,6 +54,11 @@ const AppRoutes: React.FC = () => {
               <Route path="/budgets" element={
                 <ProtectedRoute>
                   <Budgets />
+                </ProtectedRoute>
+              } />
+              <Route path="/group-budgets" element={
+                <ProtectedRoute>
+                  <GroupBudgets />
                 </ProtectedRoute>
               } />
               <Route path="/goals" element={

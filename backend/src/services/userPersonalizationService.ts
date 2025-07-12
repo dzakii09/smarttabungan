@@ -22,8 +22,8 @@ interface UserPreferences {
     emergencyFundTarget: number;
     investmentPercentage: number;
   };
-  spendingCategories: string[];
-  favoriteFeatures: string[];
+  spendingCategories: any; // Changed from string[] to any to match Json? type
+  favoriteFeatures: any; // Changed from string[] to any to match Json? type
 }
 
 interface UserInsights {
@@ -164,14 +164,14 @@ class UserPersonalizationService {
         where: { userId },
         include: { category: true },
         orderBy: { date: 'desc' },
-        take: preferences.favoriteFeatures.includes('transactions') ? 10 : 5
+        take: (preferences.favoriteFeatures as string[])?.includes('transactions') ? 10 : 5
       });
 
       // Get goals based on user preferences
       const goals = await prisma.goal.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
-        take: preferences.favoriteFeatures.includes('goals') ? 5 : 3
+        take: (preferences.favoriteFeatures as string[])?.includes('goals') ? 5 : 3
       });
 
       // Get budgets based on user preferences
@@ -179,7 +179,7 @@ class UserPersonalizationService {
         where: { userId, isActive: true },
         include: { category: true },
         orderBy: { createdAt: 'desc' },
-        take: preferences.favoriteFeatures.includes('budgets') ? 5 : 3
+        take: (preferences.favoriteFeatures as string[])?.includes('budgets') ? 5 : 3
       });
 
       // Calculate financial summary

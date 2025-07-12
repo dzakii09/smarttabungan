@@ -698,11 +698,17 @@ class NotificationService {
   private formatCurrency(amount: number): string {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      currency: 'IDR'
     }).format(amount);
   }
 }
 
-export default new NotificationService(); 
+// Export instance
+const notificationService = new NotificationService();
+
+// Export convenience function
+export const sendNotification = async (data: CreateNotificationData) => {
+  return notificationService.createNotification(data);
+};
+
+export default notificationService; 

@@ -17,7 +17,8 @@ import {
   FileSpreadsheet,
   Globe,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Users
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
@@ -32,6 +33,7 @@ const Sidebar: React.FC = () => {
     { icon: CreditCard, label: 'Transaksi', path: '/transactions' },
     { icon: Repeat, label: 'Transaksi Berulang', path: '/recurring-transactions' },
     { icon: PiggyBank, label: 'Anggaran', path: '/budgets' },
+    { icon: Users, label: 'Group Budget', path: '/group-budgets' },
     { icon: Target, label: 'Tujuan Keuangan', path: '/goals' },
     { icon: TrendingUp, label: 'Analisis', path: '/analytics' },
     { icon: MessageCircle, label: 'Chat AI', path: '/chatbot' },

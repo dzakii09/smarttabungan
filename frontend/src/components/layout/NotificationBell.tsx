@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Bell, X, Check, Trash2, AlertTriangle, Info, CheckCircle, AlertCircle } from 'lucide-react';
+import { Bell, X, Check, Trash2, AlertTriangle, Info, CheckCircle, AlertCircle, Users } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
+import GroupBudgetInvitations from '../notifications/GroupBudgetInvitations';
 
 interface Notification {
   id: string;
@@ -15,6 +16,7 @@ interface Notification {
 
 const NotificationBell: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'notifications' | 'invitations'>('notifications');
   
   const {
     notifications,
@@ -95,7 +97,7 @@ const NotificationBell: React.FC = () => {
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Notifikasi</h3>
               <div className="flex items-center gap-2">
-                {unreadCount > 0 && (
+                {unreadCount > 0 && activeTab === 'notifications' && (
                   <button
                     onClick={markAllAsRead}
                     className="text-xs text-blue-600 hover:text-blue-800"
@@ -111,65 +113,96 @@ const NotificationBell: React.FC = () => {
                 </button>
               </div>
             </div>
+            
+            {/* Tabs */}
+            <div className="flex mt-3 border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab('notifications')}
+                className={`flex-1 py-2 px-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'notifications'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Notifications ({notifications.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('invitations')}
+                className={`flex-1 py-2 px-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'invitations'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Users className="w-4 h-4 inline mr-1" />
+                Invitations
+              </button>
+            </div>
           </div>
 
           <div className="max-h-96 overflow-y-auto">
-            {loading ? (
-              <div className="p-4 text-center text-gray-500">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
-                <p className="mt-2">Memuat notifikasi...</p>
-              </div>
-            ) : notifications.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p>Tidak ada notifikasi</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-200">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`p-4 hover:bg-gray-50 transition-colors ${
-                      !notification.isRead ? getPriorityColor(notification.priority) : ''
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {getNotificationIcon(notification.type)}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <h4 className={`text-sm font-medium ${
-                            !notification.isRead ? 'text-gray-900' : 'text-gray-600'
-                          }`}>
-                            {notification.title}
-                          </h4>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => markAsRead(notification.id)}
-                              className="p-1 hover:bg-gray-200 rounded-full"
-                              title="Tandai dibaca"
-                            >
-                              <Check className="w-3 h-3 text-gray-500" />
-                            </button>
-                            <button
-                              onClick={() => deleteNotification(notification.id)}
-                              className="p-1 hover:bg-gray-200 rounded-full"
-                              title="Hapus"
-                            >
-                              <Trash2 className="w-3 h-3 text-gray-500" />
-                            </button>
+            {activeTab === 'notifications' ? (
+              <>
+                {loading ? (
+                  <div className="p-4 text-center text-gray-500">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="mt-2">Memuat notifikasi...</p>
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500">
+                    <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p>Tidak ada notifikasi</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-4 hover:bg-gray-50 transition-colors ${
+                          !notification.isRead ? getPriorityColor(notification.priority) : ''
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {getNotificationIcon(notification.type)}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <h4 className={`text-sm font-medium ${
+                                !notification.isRead ? 'text-gray-900' : 'text-gray-600'
+                              }`}>
+                                {notification.title}
+                              </h4>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => markAsRead(notification.id)}
+                                  className="p-1 hover:bg-gray-200 rounded-full"
+                                  title="Tandai dibaca"
+                                >
+                                  <Check className="w-3 h-3 text-gray-500" />
+                                </button>
+                                <button
+                                  onClick={() => deleteNotification(notification.id)}
+                                  className="p-1 hover:bg-gray-200 rounded-full"
+                                  title="Hapus"
+                                >
+                                  <Trash2 className="w-3 h-3 text-gray-500" />
+                                </button>
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-2">
+                              {formatTimeAgo(notification.createdAt)}
+                            </p>
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-2">
-                          {formatTimeAgo(notification.createdAt)}
-                        </p>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+              </>
+            ) : (
+              <GroupBudgetInvitations onClose={() => setIsOpen(false)} />
             )}
           </div>
 

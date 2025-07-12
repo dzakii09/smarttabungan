@@ -5,7 +5,8 @@ export type NotificationType =
   | 'error' 
   | 'budget_alert' 
   | 'goal_reminder' 
-  | 'recurring_due';
+  | 'recurring_due'
+  | 'budget_invitation';
 
 export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
 

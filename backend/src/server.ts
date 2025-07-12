@@ -18,6 +18,7 @@ import bankIntegrationRoutes from './routes/bankIntegration'
 import paymentGatewayRoutes from './routes/paymentGateway'
 import dataImportExportRoutes from './routes/dataImportExport'
 import externalAPIRoutes from './routes/externalAPI'
+import groupBudgetRoutes from './routes/groupBudgets'
 
 dotenv.config()
 
@@ -46,6 +47,7 @@ app.use('/api/bank', bankIntegrationRoutes)
 app.use('/api/payment', paymentGatewayRoutes)
 app.use('/api/data', dataImportExportRoutes)
 app.use('/api/external', externalAPIRoutes)
+app.use('/api/group-budgets', groupBudgetRoutes)
 
 // Health check
 app.get('/api/health', (req, res) => {

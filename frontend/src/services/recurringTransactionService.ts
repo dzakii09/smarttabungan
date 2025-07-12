@@ -48,47 +48,45 @@ export interface UpdateRecurringTransactionData {
 }
 
 class RecurringTransactionService {
-  private baseUrl = '/api/recurring-transactions';
-
   // Get all recurring transactions
   async getAll(): Promise<RecurringTransaction[]> {
-    const response = await api.get(this.baseUrl);
-    return (response.data as any).data;
+    const response = await api.get('/recurring-transactions');
+    return response.data as RecurringTransaction[];
   }
 
   // Get single recurring transaction
   async getById(id: string): Promise<RecurringTransaction> {
-    const response = await api.get(`${this.baseUrl}/${id}`);
-    return (response.data as any).data;
+    const response = await api.get(`/recurring-transactions/${id}`);
+    return response.data as RecurringTransaction;
   }
 
   // Create recurring transaction
   async create(data: CreateRecurringTransactionData): Promise<RecurringTransaction> {
-    const response = await api.post(this.baseUrl, data);
-    return (response.data as any).data;
+    const response = await api.post('/recurring-transactions', data);
+    return response.data as RecurringTransaction;
   }
 
   // Update recurring transaction
   async update(id: string, data: UpdateRecurringTransactionData): Promise<RecurringTransaction> {
-    const response = await api.put(`${this.baseUrl}/${id}`, data);
-    return (response.data as any).data;
+    const response = await api.put(`/recurring-transactions/${id}`, data);
+    return response.data as RecurringTransaction;
   }
 
   // Delete recurring transaction
   async delete(id: string): Promise<void> {
-    await api.delete(`${this.baseUrl}/${id}`);
+    await api.delete(`/recurring-transactions/${id}`);
   }
 
   // Toggle recurring transaction status
   async toggleStatus(id: string): Promise<RecurringTransaction> {
-    const response = await api.patch(`${this.baseUrl}/${id}/toggle`);
-    return (response.data as any).data;
+    const response = await api.patch(`/recurring-transactions/${id}/toggle`);
+    return response.data as RecurringTransaction;
   }
 
   // Generate transactions from recurring transactions
   async generateTransactions(): Promise<any[]> {
-    const response = await api.post(`${this.baseUrl}/generate`);
-    return (response.data as any).data;
+    const response = await api.post('/recurring-transactions/generate');
+    return response.data as any[];
   }
 
   // Get frequency options

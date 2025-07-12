@@ -33,6 +33,9 @@ model User {
   paymentTransactions PaymentTransaction[]
   externalServices ExternalService[]
   dataImports DataImport[]
+  groupBudgets GroupBudget[] @relation("GroupBudgetCreator")
+  groupBudgetMembers GroupBudgetMember[] @relation("GroupBudgetMember")
+  groupBudgetInvitations GroupBudgetInvitation[] @relation("GroupBudgetInviter")
 
   @@map("users")
 }
@@ -49,6 +52,7 @@ model Category {
   transactions Transaction[]
   recurringTransactions RecurringTransaction[]
   budgets Budget[]
+  groupBudgets GroupBudget[] @relation("GroupBudgetCategory")
 
   @@unique([name, type])
   @@map("categories")
@@ -110,6 +114,73 @@ model Budget {
   category   Category? @relation(fields: [categoryId], references: [id])
 
   @@map("budgets")
+}
+
+model GroupBudget {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  amount      Float
+  spent       Float    @default(0)
+  period      String   // "daily", "weekly", "monthly"
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Group budget is created by a user (owner)
+  createdBy   String
+  creator     User     @relation("GroupBudgetCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  
+  categoryId String?
+  category   Category? @relation("GroupBudgetCategory", fields: [categoryId], references: [id])
+
+  // Group budget members
+  members     GroupBudgetMember[]
+  
+  // Group budget invitations
+  invitations GroupBudgetInvitation[]
+
+  @@map("group_budgets")
+}
+
+model GroupBudgetMember {
+  id            String   @id @default(cuid())
+  role          String   @default("member") // "owner", "admin", "member"
+  joinedAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  groupBudgetId String
+  groupBudget   GroupBudget @relation(fields: [groupBudgetId], references: [id], onDelete: Cascade)
+  
+  userId        String
+  user          User     @relation("GroupBudgetMember", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupBudgetId, userId])
+  @@map("group_budget_members")
+}
+
+model GroupBudgetInvitation {
+  id            String   @id @default(cuid())
+  email         String
+  status        String   @default("pending") // "pending", "accepted", "declined"
+  invitedAt     DateTime @default(now())
+  respondedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  groupBudgetId String
+  groupBudget   GroupBudget @relation(fields: [groupBudgetId], references: [id], onDelete: Cascade)
+  
+  invitedBy     String
+  inviter       User     @relation("GroupBudgetInviter", fields: [invitedBy], references: [id], onDelete: Cascade)
+
+  @@unique([groupBudgetId, email])
+  @@map("group_budget_invitations")
 }
 
 model ChatMessage {
