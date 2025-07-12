@@ -10,7 +10,12 @@ import {
   inviteUser,
   acceptInvitation,
   declineInvitation,
-  getUserInvitations
+  getUserInvitations,
+  addGroupBudgetTransaction,
+  getGroupBudgetPeriods,
+  getGroupBudgetPeriodById,
+  confirmGroupBudgetPeriod,
+  getGroupBudgetPeriodConfirmations
 } from '../controllers/groupBudgetController'
 
 const router = express.Router()
@@ -24,6 +29,16 @@ router.get('/', auth as any, getGroupBudgets as any)
 router.get('/:id', auth as any, getGroupBudgetById as any)
 router.put('/:id', auth as any, updateGroupBudget as any)
 router.delete('/:id', auth as any, deleteGroupBudget as any)
+
+// Group Budget Periods
+router.get('/:groupBudgetId/periods', auth as any, getGroupBudgetPeriods as any)
+router.get('/periods/:periodId', auth as any, getGroupBudgetPeriodById as any)
+// Konfirmasi periode
+router.post('/periods/:periodId/confirm', auth as any, confirmGroupBudgetPeriod as any)
+router.get('/periods/:periodId/confirmations', auth as any, getGroupBudgetPeriodConfirmations as any)
+
+// Group Budget Transactions
+router.post('/transactions', auth as any, addGroupBudgetTransaction as any)
 
 // Invitation management
 router.post('/:groupBudgetId/invite', auth as any, inviteUser as any)

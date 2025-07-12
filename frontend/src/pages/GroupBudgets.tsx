@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, Search, Users, Calendar, DollarSign, Trash2, Edit, Eye } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import groupBudgetService, { GroupBudget, CreateGroupBudgetData, User } from '../services/groupBudgetService'
 import { categoryService } from '../services/categoryService'
 
@@ -10,6 +11,7 @@ interface Category {
 }
 
 const GroupBudgets: React.FC = () => {
+  const navigate = useNavigate()
   const [groupBudgets, setGroupBudgets] = useState<GroupBudget[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,7 +28,8 @@ const GroupBudgets: React.FC = () => {
     description: '',
     amount: 0,
     period: 'monthly',
-    startDate: '',
+    duration: 1,
+    startDate: new Date().toISOString().split('T')[0], // Default to today
     endDate: '',
     categoryId: '',
     invitedEmails: []
@@ -34,8 +37,59 @@ const GroupBudgets: React.FC = () => {
 
   const [inviteEmail, setInviteEmail] = useState('')
 
+  // Calculate target per period and end date
+  const calculatePeriodDetails = () => {
+    const { amount, period, duration, startDate } = formData
+    const start = new Date(startDate)
+    const targetPerPeriod = amount / duration
+    
+    let end = new Date(start)
+    if (period === 'daily') {
+      end.setDate(start.getDate() + duration - 1)
+    } else if (period === 'weekly') {
+      end.setDate(start.getDate() + (duration * 7) - 1)
+    } else if (period === 'monthly') {
+      end.setMonth(start.getMonth() + duration)
+      end.setDate(0) // Last day of the month
+    }
+    
+    return {
+      targetPerPeriod: Math.round(targetPerPeriod),
+      endDate: end.toISOString().split('T')[0]
+    }
+  }
+
+  const { targetPerPeriod, endDate } = calculatePeriodDetails()
+
+  // Update end date when period or duration changes
+  const handlePeriodChange = (newPeriod: string) => {
+    const { endDate: newEndDate } = calculatePeriodDetails()
+    setFormData(prev => ({
+      ...prev,
+      period: newPeriod as any,
+      endDate: newEndDate
+    }))
+  }
+
+  const handleDurationChange = (newDuration: number) => {
+    const { endDate: newEndDate } = calculatePeriodDetails()
+    setFormData(prev => ({
+      ...prev,
+      duration: newDuration,
+      endDate: newEndDate
+    }))
+  }
+
   useEffect(() => {
     loadData()
+    
+    // Debug: Check authentication status on component mount
+    const token = localStorage.getItem('token');
+    console.log('🔍 Debug: GroupBudgets component mounted');
+    console.log('🔍 Debug: Token exists:', !!token);
+    if (token) {
+      console.log('🔍 Debug: Token preview:', token.substring(0, 50) + '...');
+    }
   }, [])
 
   const loadData = async () => {
@@ -56,6 +110,13 @@ const GroupBudgets: React.FC = () => {
 
   const handleCreateGroupBudget = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Debug: Check authentication status
+    const token = localStorage.getItem('token');
+    console.log('🔍 Debug: Creating group budget...');
+    console.log('🔍 Debug: Token exists:', !!token);
+    console.log('🔍 Debug: Form data:', formData);
+    
     try {
       const newGroupBudget = await groupBudgetService.createGroupBudget(formData)
       setGroupBudgets([newGroupBudget, ...groupBudgets])
@@ -65,7 +126,8 @@ const GroupBudgets: React.FC = () => {
         description: '',
         amount: 0,
         period: 'monthly',
-        startDate: '',
+        duration: 1,
+        startDate: new Date().toISOString().split('T')[0], // Default to today
         endDate: '',
         categoryId: '',
         invitedEmails: []
@@ -144,6 +206,20 @@ const GroupBudgets: React.FC = () => {
     return 'bg-green-500'
   }
 
+  // Hitung progress konfirmasi member per periode
+  const getConfirmationProgress = (budget: GroupBudget) => {
+    if (!budget.periods || budget.periods.length === 0) return 0
+    const totalMembers = budget.members.length
+    const totalPeriods = budget.periods.length
+    let totalConfirm = 0
+    budget.periods.forEach(period => {
+      const confirmations = (period as any).GroupBudgetPeriodConfirmation || []
+      totalConfirm += confirmations.filter((c: any) => c.confirmedAt).length
+    })
+    const totalNeeded = totalMembers * totalPeriods
+    return totalNeeded === 0 ? 0 : (totalConfirm / totalNeeded) * 100
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -159,13 +235,15 @@ const GroupBudgets: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Group Budgets</h1>
           <p className="text-gray-600">Manage shared budgets with other users</p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700"
-        >
-          <Plus size={20} />
-          Create Group Budget
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700"
+          >
+            <Plus size={20} />
+            Create Group Budget
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -185,25 +263,32 @@ const GroupBudgets: React.FC = () => {
       {/* Group Budgets Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredGroupBudgets.map((budget) => {
-          const progressPercentage = getProgressPercentage(budget.spent, budget.amount)
+          const progressPercentage = getConfirmationProgress(budget)
           const progressColor = getProgressColor(progressPercentage)
 
           return (
-            <div key={budget.id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+            <div key={budget.id} className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{budget.name}</h3>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{budget.name}</h3>
                   {budget.description && (
-                    <p className="text-gray-600 text-sm mt-1">{budget.description}</p>
+                    <p className="text-sm text-gray-600">{budget.description}</p>
                   )}
                 </div>
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => navigate(`/group-budgets/${budget.id}`)}
+                    className="text-blue-600 hover:text-blue-700"
+                    title="View Details"
+                  >
+                    <Eye size={16} />
+                  </button>
                   <button
                     onClick={() => {
                       setSelectedGroupBudget(budget)
                       setShowInviteModal(true)
                     }}
-                    className="text-blue-600 hover:text-blue-700"
+                    className="text-green-600 hover:text-green-700"
                     title="Invite User"
                   >
                     <Users size={16} />
@@ -229,7 +314,8 @@ const GroupBudgets: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Calendar size={16} className="text-gray-500" />
                   <span className="text-sm text-gray-600 capitalize">
-                    {budget.period} • {formatDate(budget.startDate)} - {formatDate(budget.endDate)}
+                    {budget.period} • {budget.duration} {budget.period}
+                    {budget.duration > 1 ? 's' : ''} • {formatDate(budget.startDate)} - {formatDate(budget.endDate)}
                   </span>
                 </div>
 
@@ -243,13 +329,13 @@ const GroupBudgets: React.FC = () => {
                 {/* Progress Bar */}
                 <div className="mt-4">
                   <div className="flex justify-between text-sm text-gray-600 mb-1">
-                    <span>Progress</span>
-                    <span>{progressPercentage.toFixed(1)}%</span>
+                    <span>Progress Konfirmasi</span>
+                    <span>{getConfirmationProgress(budget).toFixed(1)}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
-                      className={`h-2 rounded-full ${progressColor}`}
-                      style={{ width: `${progressPercentage}%` }}
+                      className={`h-2 rounded-full ${getProgressColor(getConfirmationProgress(budget))}`}
+                      style={{ width: `${getConfirmationProgress(budget)}%` }}
                     ></div>
                   </div>
                 </div>
@@ -303,7 +389,7 @@ const GroupBudgets: React.FC = () => {
       {/* Create Group Budget Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-screen overflow-y-auto">
             <h2 className="text-xl font-semibold mb-4">Create Group Budget</h2>
             <form onSubmit={handleCreateGroupBudget} className="space-y-4">
               <div>
@@ -342,13 +428,40 @@ const GroupBudgets: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Period</label>
                 <select
                   value={formData.period}
-                  onChange={(e) => setFormData({ ...formData, period: e.target.value as any })}
+                  onChange={(e) => handlePeriodChange(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
                   <option value="monthly">Monthly</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={formData.duration || ''}
+                  onChange={(e) => handleDurationChange(parseInt(e.target.value) || 1)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Target per period info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-blue-800">Target per {formData.period}</span>
+                </div>
+                <div className="text-lg font-bold text-blue-900">
+                  Rp {targetPerPeriod.toLocaleString('id-ID')}
+                </div>
+                <div className="text-xs text-blue-600 mt-1">
+                  Total: {formData.amount.toLocaleString('id-ID')} ÷ {formData.duration} {formData.period}
+                  {formData.duration > 1 ? 's' : ''}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -363,13 +476,13 @@ const GroupBudgets: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date (Auto-calculated)</label>
                   <input
                     type="date"
                     required
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    value={endDate}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
                   />
                 </div>
               </div>

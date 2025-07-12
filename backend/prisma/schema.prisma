@@ -22,37 +22,39 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  transactions Transaction[]
-  goals        Goal[]
-  budgets      Budget[]
-  chatMessages ChatMessage[]
-  recurringTransactions RecurringTransaction[]
-  notifications Notification[]
-  preferences UserPreferences?
-  bankAccounts BankAccount[]
-  paymentTransactions PaymentTransaction[]
-  externalServices ExternalService[]
-  dataImports DataImport[]
-  groupBudgets GroupBudget[] @relation("GroupBudgetCreator")
-  groupBudgetMembers GroupBudgetMember[] @relation("GroupBudgetMember")
-  groupBudgetInvitations GroupBudgetInvitation[] @relation("GroupBudgetInviter")
+  transactions                   Transaction[]
+  goals                          Goal[]
+  budgets                        Budget[]
+  chatMessages                   ChatMessage[]
+  recurringTransactions          RecurringTransaction[]
+  notifications                  Notification[]
+  preferences                    UserPreferences?
+  bankAccounts                   BankAccount[]
+  paymentTransactions            PaymentTransaction[]
+  externalServices               ExternalService[]
+  dataImports                    DataImport[]
+  groupBudgets                   GroupBudget[]                   @relation("GroupBudgetCreator")
+  groupBudgetMembers             GroupBudgetMember[]             @relation("GroupBudgetMember")
+  groupBudgetInvitations         GroupBudgetInvitation[]         @relation("GroupBudgetInviter")
+  groupBudgetTransactions        GroupBudgetTransaction[]        @relation("GroupBudgetTransactionCreator")
+  groupBudgetPeriodConfirmations GroupBudgetPeriodConfirmation[]
 
   @@map("users")
 }
 
 model Category {
-  id          String   @id @default(cuid())
-  name        String
-  type        String   // "income" or "expense"
-  icon        String?
-  color       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  type      String // "income" or "expense"
+  icon      String?
+  color     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  transactions Transaction[]
+  transactions          Transaction[]
   recurringTransactions RecurringTransaction[]
-  budgets Budget[]
-  groupBudgets GroupBudget[] @relation("GroupBudgetCategory")
+  budgets               Budget[]
+  groupBudgets          GroupBudget[]          @relation("GroupBudgetCategory")
 
   @@unique([name, type])
   @@map("categories")
@@ -62,14 +64,14 @@ model Transaction {
   id          String   @id @default(cuid())
   amount      Float
   description String
-  type        String   // "income" or "expense"
+  type        String // "income" or "expense"
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
 
@@ -80,36 +82,36 @@ model Transaction {
 }
 
 model Goal {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  targetAmount Float
-  currentAmount Float  @default(0)
-  targetDate  DateTime?
-  isCompleted Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  targetAmount  Float
+  currentAmount Float     @default(0)
+  targetDate    DateTime?
+  isCompleted   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("goals")
 }
 
 model Budget {
-  id          String   @id @default(cuid())
-  amount      Float
-  spent       Float    @default(0)
-  period      String   // "monthly", "weekly", "yearly"
-  startDate   DateTime
-  endDate     DateTime
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  amount    Float
+  spent     Float    @default(0)
+  period    String // "monthly", "weekly", "yearly"
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
 
@@ -122,7 +124,8 @@ model GroupBudget {
   description String?
   amount      Float
   spent       Float    @default(0)
-  period      String   // "daily", "weekly", "monthly"
+  period      String // "daily", "weekly", "monthly"
+  duration    Int      @default(1) // Durasi dalam satuan period (misal: 3 bulan, 4 minggu)
   startDate   DateTime
   endDate     DateTime
   isActive    Boolean  @default(true)
@@ -130,54 +133,103 @@ model GroupBudget {
   updatedAt   DateTime @updatedAt
 
   // Group budget is created by a user (owner)
-  createdBy   String
-  creator     User     @relation("GroupBudgetCreator", fields: [createdBy], references: [id], onDelete: Cascade)
-  
+  createdBy String
+  creator   User   @relation("GroupBudgetCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
   categoryId String?
   category   Category? @relation("GroupBudgetCategory", fields: [categoryId], references: [id])
 
   // Group budget members
-  members     GroupBudgetMember[]
-  
+  members GroupBudgetMember[]
+
   // Group budget invitations
   invitations GroupBudgetInvitation[]
+
+  // Group budget periods
+  periods                GroupBudgetPeriod[]
+  GroupBudgetTransaction GroupBudgetTransaction[]
 
   @@map("group_budgets")
 }
 
-model GroupBudgetMember {
-  id            String   @id @default(cuid())
-  role          String   @default("member") // "owner", "admin", "member"
-  joinedAt      DateTime @default(now())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+model GroupBudgetPeriod {
+  id           String   @id @default(cuid())
+  periodNumber Int // Nomor periode (1, 2, 3, dst)
+  startDate    DateTime
+  endDate      DateTime
+  budget       Float // Budget untuk periode ini
+  spent        Float    @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relations
   groupBudgetId String
   groupBudget   GroupBudget @relation(fields: [groupBudgetId], references: [id], onDelete: Cascade)
-  
-  userId        String
-  user          User     @relation("GroupBudgetMember", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Transactions in this period
+  transactions                  GroupBudgetTransaction[]
+  GroupBudgetPeriodConfirmation GroupBudgetPeriodConfirmation[]
+
+  @@unique([groupBudgetId, periodNumber])
+  @@map("group_budget_periods")
+}
+
+model GroupBudgetTransaction {
+  id          String   @id @default(cuid())
+  amount      Float
+  description String
+  type        String // "income" or "expense"
+  date        DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  groupBudgetId String
+  groupBudget   GroupBudget @relation(fields: [groupBudgetId], references: [id], onDelete: Cascade)
+
+  periodId String
+  period   GroupBudgetPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  createdBy String
+  creator   User   @relation("GroupBudgetTransactionCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@map("group_budget_transactions")
+}
+
+model GroupBudgetMember {
+  id        String   @id @default(cuid())
+  role      String   @default("member") // "owner", "admin", "member"
+  joinedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  groupBudgetId String
+  groupBudget   GroupBudget @relation(fields: [groupBudgetId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("GroupBudgetMember", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([groupBudgetId, userId])
   @@map("group_budget_members")
 }
 
 model GroupBudgetInvitation {
-  id            String   @id @default(cuid())
-  email         String
-  status        String   @default("pending") // "pending", "accepted", "declined"
-  invitedAt     DateTime @default(now())
-  respondedAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String    @id @default(cuid())
+  email       String
+  status      String    @default("pending") // "pending", "accepted", "declined"
+  invitedAt   DateTime  @default(now())
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Relations
   groupBudgetId String
   groupBudget   GroupBudget @relation(fields: [groupBudgetId], references: [id], onDelete: Cascade)
-  
-  invitedBy     String
-  inviter       User     @relation("GroupBudgetInviter", fields: [invitedBy], references: [id], onDelete: Cascade)
+
+  invitedBy String
+  inviter   User   @relation("GroupBudgetInviter", fields: [invitedBy], references: [id], onDelete: Cascade)
 
   @@unique([groupBudgetId, email])
   @@map("group_budget_invitations")
@@ -191,29 +243,29 @@ model ChatMessage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("chat_messages")
 }
 
 model RecurringTransaction {
-  id          String   @id @default(cuid())
-  description String
-  amount      Float
-  type        String   // "income" or "expense"
-  frequency   String   // "daily", "weekly", "monthly", "yearly"
-  startDate   DateTime
-  endDate     DateTime?
-  isActive    Boolean  @default(true)
+  id            String    @id @default(cuid())
+  description   String
+  amount        Float
+  type          String // "income" or "expense"
+  frequency     String // "daily", "weekly", "monthly", "yearly"
+  startDate     DateTime
+  endDate       DateTime?
+  isActive      Boolean   @default(true)
   lastGenerated DateTime?
-  nextDueDate DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  nextDueDate   DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
 
@@ -223,133 +275,148 @@ model RecurringTransaction {
 }
 
 model Notification {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   message     String
-  type        String   // "info", "warning", "success", "error", "budget_alert", "goal_reminder", "recurring_due"
-  isRead      Boolean  @default(false)
-  priority    String   @default("medium") // "low", "medium", "high", "urgent"
+  type        String // "info", "warning", "success", "error", "budget_alert", "goal_reminder", "recurring_due"
+  isRead      Boolean   @default(false)
+  priority    String    @default("medium") // "low", "medium", "high", "urgent"
   scheduledAt DateTime?
   sentAt      DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  metadata    Json?    // Additional data like budgetId, goalId, etc.
+  metadata Json? // Additional data like budgetId, goalId, etc.
 
   @@map("notifications")
 }
 
 model UserPreferences {
-  id          String   @id @default(cuid())
-  dashboardLayout String @default("default")
-  defaultCurrency String @default("IDR")
-  language    String   @default("id")
-  theme       String   @default("light")
+  id                   String   @id @default(cuid())
+  dashboardLayout      String   @default("default")
+  defaultCurrency      String   @default("IDR")
+  language             String   @default("id")
+  theme                String   @default("light")
   notificationSettings Json? // Email, push, inApp settings
-  financialGoals Json? // Monthly savings target, emergency fund, investment percentage
-  spendingCategories String[] @default([])
-  favoriteFeatures String[] @default([])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  financialGoals       Json? // Monthly savings target, emergency fund, investment percentage
+  spendingCategories   String[] @default([])
+  favoriteFeatures     String[] @default([])
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_preferences")
 }
 
 model BankAccount {
-  id              String   @id @default(cuid())
-  userId          String
-  bankName        String
-  accountNumber   String
-  accountType     String
-  balance         Float    @default(0)
-  currency        String   @default("IDR")
-  isActive        Boolean  @default(true)
-  lastSync        DateTime?
-  syncFrequency   String   @default("daily")
-  apiCredentials  Json?    // Encrypted API credentials
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions    BankTransaction[]
+  id             String    @id @default(cuid())
+  userId         String
+  bankName       String
+  accountNumber  String
+  accountType    String
+  balance        Float     @default(0)
+  currency       String    @default("IDR")
+  isActive       Boolean   @default(true)
+  lastSync       DateTime?
+  syncFrequency  String    @default("daily")
+  apiCredentials Json? // Encrypted API credentials
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions BankTransaction[]
 
   @@map("bank_accounts")
 }
 
 model BankTransaction {
-  id              String   @id @default(cuid())
-  bankAccountId   String
-  externalId      String   @unique
-  amount          Float
-  type            String   // credit/debit
-  description     String
-  category        String?
-  date            DateTime
-  balance         Float
-  isSynced        Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  bankAccount     BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  bankAccountId String
+  externalId    String   @unique
+  amount        Float
+  type          String // credit/debit
+  description   String
+  category      String?
+  date          DateTime
+  balance       Float
+  isSynced      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bankAccount BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
 
   @@map("bank_transactions")
 }
 
 model PaymentTransaction {
-  id              String   @id @default(cuid())
-  userId          String
-  amount          Float
-  currency        String   @default("IDR")
-  paymentMethod   String
-  status          String   // pending/success/failed
-  description     String
-  externalId      String?
-  metadata        Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String
+  amount        Float
+  currency      String   @default("IDR")
+  paymentMethod String
+  status        String // pending/success/failed
+  description   String
+  externalId    String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("payment_transactions")
 }
 
 model ExternalService {
-  id              String   @id @default(cuid())
-  userId          String
-  serviceType     String   // bank/payment/currency/stock/weather/news
-  serviceName     String
-  isConnected     Boolean  @default(false)
-  lastSync        DateTime?
-  settings        Json?
-  apiKey          String?  // Encrypted API key
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  serviceType String // bank/payment/currency/stock/weather/news
+  serviceName String
+  isConnected Boolean   @default(false)
+  lastSync    DateTime?
+  settings    Json?
+  apiKey      String? // Encrypted API key
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("external_services")
 }
 
 model DataImport {
-  id              String   @id @default(cuid())
-  userId          String
-  fileName        String
-  fileType        String   // csv/excel/json
-  status          String   // processing/completed/failed
-  totalRecords    Int      @default(0)
-  processedRecords Int     @default(0)
-  errorCount      Int      @default(0)
-  errors          Json?    // Error details
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  userId           String
+  fileName         String
+  fileType         String // csv/excel/json
+  status           String // processing/completed/failed
+  totalRecords     Int      @default(0)
+  processedRecords Int      @default(0)
+  errorCount       Int      @default(0)
+  errors           Json? // Error details
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("data_imports")
+}
+
+model GroupBudgetPeriodConfirmation {
+  id          String    @id @default(cuid())
+  periodId    String
+  userId      String
+  confirmedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  period GroupBudgetPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([periodId, userId])
+  @@map("group_budget_period_confirmations")
 }

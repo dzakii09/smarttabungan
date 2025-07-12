@@ -12,10 +12,19 @@ const api = axios.create({
 // JWT Interceptor
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
+  console.log('🔍 Debug: Token from localStorage:', token ? 'Token exists' : 'No token found');
+  
   if (token) {
     config.headers = config.headers || {};
     config.headers['Authorization'] = `Bearer ${token}`;
+    console.log('🔍 Debug: Authorization header set:', `Bearer ${token.substring(0, 20)}...`);
+  } else {
+    console.log('🔍 Debug: No token found in localStorage');
   }
+  
+  console.log('🔍 Debug: Request URL:', config.url);
+  console.log('🔍 Debug: Request headers:', config.headers);
+  
   return config;
 });
 
@@ -23,8 +32,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.log('🔍 Debug: Response error:', error.response?.status, error.response?.data);
+    
     // Bisa handle error global di sini (misal: auto logout jika 401)
     if (error.response && error.response.status === 401) {
+      console.log('🔍 Debug: 401 Unauthorized - Token mungkin invalid atau expired');
       // localStorage.removeItem('token');
       // window.location.href = '/';
     }

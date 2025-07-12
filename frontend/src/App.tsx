@@ -9,6 +9,7 @@ import Transactions from './pages/Transactions';
 import Goals from './pages/Goals';
 import Budgets from './pages/Budgets';
 import GroupBudgets from './pages/GroupBudgets';
+import GroupBudgetDetail from './pages/GroupBudgetDetail';
 import Analytics from './pages/Analytics';
 import Notifications from './pages/Notifications';
 import { RecurringTransactions } from './pages/RecurringTransactions';
@@ -59,6 +60,11 @@ const AppRoutes: React.FC = () => {
               <Route path="/group-budgets" element={
                 <ProtectedRoute>
                   <GroupBudgets />
+                </ProtectedRoute>
+              } />
+              <Route path="/group-budgets/:id" element={
+                <ProtectedRoute>
+                  <GroupBudgetDetail />
                 </ProtectedRoute>
               } />
               <Route path="/goals" element={

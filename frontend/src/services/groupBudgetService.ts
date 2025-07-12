@@ -7,6 +7,7 @@ export interface GroupBudget {
   amount: number
   spent: number
   period: 'daily' | 'weekly' | 'monthly'
+  duration: number
   startDate: string
   endDate: string
   isActive: boolean
@@ -26,6 +27,39 @@ export interface GroupBudget {
   }
   members: GroupBudgetMember[]
   invitations: GroupBudgetInvitation[]
+  periods?: GroupBudgetPeriod[]
+}
+
+export interface GroupBudgetPeriod {
+  id: string
+  periodNumber: number
+  startDate: string
+  endDate: string
+  budget: number
+  spent: number
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  groupBudgetId: string
+  transactions: GroupBudgetTransaction[]
+}
+
+export interface GroupBudgetTransaction {
+  id: string
+  amount: number
+  description: string
+  type: 'income' | 'expense'
+  date: string
+  createdAt: string
+  updatedAt: string
+  groupBudgetId: string
+  periodId: string
+  createdBy: string
+  creator: {
+    id: string
+    name: string
+    email: string
+  }
 }
 
 export interface GroupBudgetMember {
@@ -68,10 +102,20 @@ export interface CreateGroupBudgetData {
   description?: string
   amount: number
   period: 'daily' | 'weekly' | 'monthly'
+  duration: number
   startDate: string
-  endDate: string
+  endDate?: string
   categoryId?: string
   invitedEmails?: string[]
+}
+
+export interface AddGroupBudgetTransactionData {
+  groupBudgetId: string
+  periodId: string
+  amount: number
+  description: string
+  type: 'income' | 'expense'
+  date: string
 }
 
 export interface UpdateGroupBudgetData {
@@ -79,6 +123,7 @@ export interface UpdateGroupBudgetData {
   description?: string
   amount?: number
   period?: 'daily' | 'weekly' | 'monthly'
+  duration?: number
   startDate?: string
   endDate?: string
   categoryId?: string
@@ -89,6 +134,8 @@ export interface User {
   name: string
   email: string
 }
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 class GroupBudgetService {
   // Create group budget
@@ -120,6 +167,41 @@ class GroupBudgetService {
     await api.delete(`/group-budgets/${id}`)
   }
 
+  // Get group budget periods
+  async getGroupBudgetPeriods(groupBudgetId: string): Promise<GroupBudgetPeriod[]> {
+    const response = await api.get(`/group-budgets/${groupBudgetId}/periods`)
+    return response.data as GroupBudgetPeriod[]
+  }
+
+  // Get group budget period by ID
+  async getGroupBudgetPeriodById(periodId: string): Promise<GroupBudgetPeriod> {
+    const response = await api.get(`/group-budgets/periods/${periodId}`)
+    return response.data as GroupBudgetPeriod
+  }
+
+  // Add transaction to group budget period
+  async addGroupBudgetTransaction(data: AddGroupBudgetTransactionData): Promise<any> {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('No token found')
+
+    const response = await fetch(`${API_BASE_URL}/group-budgets/${data.groupBudgetId}/transactions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || 'Failed to add transaction')
+    }
+
+    const result = await response.json()
+    return result // Returns { message, transaction, isLate, warning }
+  }
+
   // Search users
   async searchUsers(query: string): Promise<User[]> {
     const response = await api.get(`/group-budgets/search/users?query=${encodeURIComponent(query)}`)
@@ -146,6 +228,29 @@ class GroupBudgetService {
   async getUserInvitations(): Promise<GroupBudgetInvitation[]> {
     const response = await api.get('/group-budgets/invitations/user')
     return response.data as GroupBudgetInvitation[]
+  }
+
+  // Get period confirmations (status konfirmasi semua member pada periode)
+  async getPeriodConfirmations(periodId: string): Promise<Array<{userId: string, name: string, confirmedAt: string | null}>> {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('No token found')
+    const response = await fetch(`${API_BASE_URL}/group-budgets/periods/${periodId}/confirmations`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    if (!response.ok) throw new Error('Failed to get confirmations')
+    return await response.json()
+  }
+
+  // Confirm period for current user
+  async confirmPeriod(periodId: string): Promise<any> {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('No token found')
+    const response = await fetch(`${API_BASE_URL}/group-budgets/periods/${periodId}/confirm`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    if (!response.ok) throw new Error('Failed to confirm period')
+    return await response.json()
   }
 }
 
