@@ -26,10 +26,12 @@ export class ChatbotService {
     return ChatbotService.instance;
   }
 
-  async sendMessage(message: string): Promise<ChatbotResponse> {
+  async sendMessage(message: string, context?: any): Promise<ChatbotResponse> {
     try {
-      const response = await api.post('/chatbot/message', {
+      // Update endpoint to match backend route
+      const response = await api.post('/ai/chat', {
         message,
+        context: context || this.userContext,
         timestamp: new Date().toISOString()
       });
       
@@ -160,4 +162,4 @@ export class ChatbotService {
   }
 }
 
-export default ChatbotService.getInstance(); 
+export default ChatbotService.getInstance();
