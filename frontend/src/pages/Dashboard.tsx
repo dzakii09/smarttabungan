@@ -9,7 +9,6 @@ import {
 import { useApp } from '../contexts/AppContext';
 import StatsCard from '../components/dashboard/StatsCard';
 import ExpenseChart from '../components/dashboard/ExpenseChart';
-import AnalyticsSummary from '../components/dashboard/AnalyticsSummary';
 import SpendingInsights from '../components/dashboard/SpendingInsights';
 import AdvancedCharts from '../components/dashboard/AdvancedCharts';
 import MonthlyComparison from '../components/dashboard/MonthlyComparison';
@@ -146,7 +145,6 @@ const Dashboard: React.FC = () => {
         {/* Left/Main Column */}
         <div className="lg:col-span-2 space-y-8">
           <ExpenseChart />
-          <AnalyticsSummary />
           <SpendingInsights />
           <AdvancedCharts />
           <MonthlyComparison />

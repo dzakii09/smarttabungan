@@ -37,7 +37,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
   const [dateRange, setDateRange] = useState('all');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
-  const [selectedDataTypes, setSelectedDataTypes] = useState<string[]>(['transactions', 'budgets', 'goals', 'analytics']);
+  const [selectedDataTypes, setSelectedDataTypes] = useState<string[]>(['transactions', 'budgets', 'goals']);
 
   // Fetch export options
   const fetchExportOptions = async () => {
@@ -106,8 +106,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
         endDate,
         includeTransactions: selectedDataTypes.includes('transactions'),
         includeBudgets: selectedDataTypes.includes('budgets'),
-        includeGoals: selectedDataTypes.includes('goals'),
-        includeAnalytics: selectedDataTypes.includes('analytics')
+        includeGoals: selectedDataTypes.includes('goals')
       };
 
       const response = await api.post('/export/all', exportData, {

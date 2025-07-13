@@ -211,12 +211,24 @@ const getTransactionStats = (req, res) => __awaiter(void 0, void 0, void 0, func
         const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
         const { startDate, endDate } = req.query;
         const where = { userId };
+        // Default to current month if no date range provided
         if (startDate && endDate) {
             where.date = {
                 gte: new Date(startDate),
                 lte: new Date(endDate)
             };
         }
+        else {
+            // Get current month data
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+            where.date = {
+                gte: startOfMonth,
+                lte: endOfMonth
+            };
+        }
+        console.log('TransactionStats Query:', JSON.stringify(where, null, 2));
         const [income, expense] = yield Promise.all([
             database_1.default.transaction.aggregate({
                 where: Object.assign(Object.assign({}, where), { type: 'income' }),
@@ -227,12 +239,14 @@ const getTransactionStats = (req, res) => __awaiter(void 0, void 0, void 0, func
                 _sum: { amount: true }
             })
         ]);
+        console.log('Income aggregate:', income);
+        console.log('Expense aggregate:', expense);
         const totalIncome = income._sum.amount || 0;
         const totalExpense = expense._sum.amount || 0;
         const balance = totalIncome - totalExpense;
         res.json({
-            income: totalIncome,
-            expense: totalExpense,
+            totalIncome: totalIncome,
+            totalExpense: totalExpense,
             balance
         });
     }

@@ -47,7 +47,6 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onShowLogin }) => {
       <div className="flex flex-col md:flex-row bg-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up">
         {/* Ilustrasi/Hero */}
         <div className="hidden md:flex flex-col items-center justify-center bg-gradient-to-br from-primary-100 to-secondary-200 px-10 py-12">
-          <img src="/illustrations/register-hero.svg" alt="Register Ilustrasi" className="w-64 h-64 mb-6 animate-float" />
           <h3 className="text-xl font-bold text-primary-700 mb-2">Bergabung dengan SmartWealth!</h3>
           <p className="text-primary-500 text-center max-w-xs">Daftar sekarang dan mulai perjalanan finansial yang lebih cerdas dan terarah.</p>
         </div>

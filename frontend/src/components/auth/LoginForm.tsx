@@ -46,7 +46,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onShowRegister }) => {
       <div className="flex flex-col md:flex-row bg-white rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up">
         {/* Ilustrasi/Hero */}
         <div className="hidden md:flex flex-col items-center justify-center bg-gradient-to-br from-primary-100 to-secondary-200 px-10 py-12">
-          <img src="/illustrations/login-hero.svg" alt="Login Ilustrasi" className="w-64 h-64 mb-6 animate-float" />
           <h3 className="text-xl font-bold text-primary-700 mb-2">Selamat Datang Kembali!</h3>
           <p className="text-primary-500 text-center max-w-xs">Akses SmartWealth dan kelola keuangan Anda dengan mudah, aman, dan cerdas.</p>
         </div>

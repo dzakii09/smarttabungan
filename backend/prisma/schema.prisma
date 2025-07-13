@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -27,7 +26,6 @@ model User {
   budgets                        Budget[]
   chatMessages                   ChatMessage[]
   notifications                  Notification[]
-  bankAccounts                   BankAccount[]
   paymentTransactions            PaymentTransaction[]
   externalServices               ExternalService[]
   dataImports                    DataImport[]
@@ -261,46 +259,6 @@ model Notification {
   metadata Json? // Additional data like budgetId, goalId, etc.
 
   @@map("notifications")
-}
-
-model BankAccount {
-  id             String    @id @default(cuid())
-  userId         String
-  bankName       String
-  accountNumber  String
-  accountType    String
-  balance        Float     @default(0)
-  currency       String    @default("IDR")
-  isActive       Boolean   @default(true)
-  lastSync       DateTime?
-  syncFrequency  String    @default("daily")
-  apiCredentials Json? // Encrypted API credentials
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions BankTransaction[]
-
-  @@map("bank_accounts")
-}
-
-model BankTransaction {
-  id            String   @id @default(cuid())
-  bankAccountId String
-  externalId    String   @unique
-  amount        Float
-  type          String // credit/debit
-  description   String
-  category      String?
-  date          DateTime
-  balance       Float
-  isSynced      Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  bankAccount BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
-
-  @@map("bank_transactions")
 }
 
 model PaymentTransaction {

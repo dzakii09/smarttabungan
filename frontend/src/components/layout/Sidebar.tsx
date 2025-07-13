@@ -10,7 +10,6 @@ import {
   Settings,
   LogOut,
   Repeat,
-  Lightbulb,
   User,
   Building2,
   CreditCard as PaymentIcon,
@@ -34,10 +33,7 @@ const Sidebar: React.FC = () => {
     { icon: PiggyBank, label: 'Anggaran', path: '/budgets' },
     { icon: Users, label: 'Group Budget', path: '/group-budgets' },
     { icon: Target, label: 'Tujuan Keuangan', path: '/goals' },
-    { icon: TrendingUp, label: 'Analisis', path: '/analytics' },
     { icon: MessageCircle, label: 'Chat AI', path: '/chatbot' },
-    { icon: Lightbulb, label: 'AI Recommendations', path: '/ai-recommendations' },
-    { icon: Building2, label: 'Bank Integration', path: '/bank-integration' },
   ];
 
   const handleLogout = () => {

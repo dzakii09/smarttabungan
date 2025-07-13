@@ -11,7 +11,7 @@ class BudgetController {
   // Create new budget
   async createBudget(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       
       // Debug: log user info
       console.log('User info:', req.user);
@@ -70,7 +70,7 @@ class BudgetController {
   // Get all budgets
   async getBudgets(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const budgets = await budgetService.getBudgets(userId);
 
       res.json({
@@ -89,7 +89,7 @@ class BudgetController {
   // Get budget by ID
   async getBudgetById(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const { id } = req.params;
 
       const budget = await budgetService.getBudgetById(userId, id);
@@ -117,7 +117,7 @@ class BudgetController {
   // Update budget
   async updateBudget(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const { id } = req.params;
       const updateData = req.body;
 
@@ -150,7 +150,7 @@ class BudgetController {
   // Delete budget
   async deleteBudget(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const { id } = req.params;
 
       await budgetService.deleteBudget(userId, id);
@@ -171,7 +171,7 @@ class BudgetController {
   // Toggle budget status
   async toggleBudgetStatus(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const { id } = req.params;
 
       const budget = await budgetService.toggleBudgetStatus(userId, id);
@@ -193,7 +193,7 @@ class BudgetController {
   // Get budget alerts
   async getBudgetAlerts(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const alerts = await budgetService.getBudgetAlerts(userId);
 
       res.json({
@@ -212,7 +212,7 @@ class BudgetController {
   // Get budget statistics
   async getBudgetStats(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const stats = await budgetService.getBudgetStats(userId);
 
       res.json({
@@ -231,7 +231,7 @@ class BudgetController {
   // Get AI budget recommendations
   async getBudgetRecommendations(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const recommendations = await aiService.getBudgetRecommendations(userId);
 
       res.json({
@@ -250,7 +250,7 @@ class BudgetController {
   // Create budget from AI recommendation
   async createBudgetFromRecommendation(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const { categoryId, recommendedAmount } = req.body;
 
       if (!categoryId || !recommendedAmount) {
@@ -283,7 +283,7 @@ class BudgetController {
   // Get budget insights
   async getBudgetInsights(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const insights = await aiService.getBudgetInsights(userId);
 
       res.json({

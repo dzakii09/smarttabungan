@@ -6,13 +6,11 @@ import transactionRoutes from './routes/transactions'
 import goalRoutes from './routes/goals'
 import categoryRoutes from './routes/categories'
 import budgetRoutes from './routes/budgets'
-import analyticsRoutes from './routes/analytics'
 import importExportRoutes from './routes/import'
 import aiRoutes from './routes/ai'
 import notificationRoutes from './routes/notifications'
 import scheduledNotificationRoutes from './routes/scheduledNotifications'
 import exportRoutes from './routes/export'
-import bankIntegrationRoutes from './routes/bankIntegration'
 import paymentGatewayRoutes from './routes/paymentGateway'
 import dataImportExportRoutes from './routes/dataImportExport'
 import externalAPIRoutes from './routes/externalAPI'
@@ -37,13 +35,11 @@ app.use('/api/transactions', transactionRoutes)
 app.use('/api/goals', goalRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/budgets', budgetRoutes)
-app.use('/api/analytics', analyticsRoutes)
 app.use('/api/import-export', importExportRoutes)
 app.use('/api/ai', aiRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/scheduled-notifications', scheduledNotificationRoutes)
 app.use('/api/export', exportRoutes)
-app.use('/api/bank', bankIntegrationRoutes)
 app.use('/api/payment', paymentGatewayRoutes)
 app.use('/api/data', dataImportExportRoutes)
 app.use('/api/external', externalAPIRoutes)

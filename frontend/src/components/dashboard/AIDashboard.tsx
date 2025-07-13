@@ -235,11 +235,11 @@ const AIDashboard: React.FC = () => {
         <h4 className="font-semibold text-neutral-800 mb-3">Quick Actions</h4>
         <div className="grid grid-cols-2 gap-2">
           <button
-            onClick={() => window.location.href = '/ai-recommendations'}
+            onClick={() => window.location.href = '/budgets'}
             className="p-2 text-xs bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center space-x-1"
           >
-            <Lightbulb className="w-3 h-3" />
-            <span>View All AI</span>
+            <Target className="w-3 h-3" />
+            <span>View Budgets</span>
           </button>
           <button
             onClick={() => window.location.href = '/chatbot'}

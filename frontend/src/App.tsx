@@ -10,10 +10,8 @@ import Goals from './pages/Goals';
 import Budgets from './pages/Budgets';
 import GroupBudgets from './pages/GroupBudgets';
 import GroupBudgetDetail from './pages/GroupBudgetDetail';
-import Analytics from './pages/Analytics';
 import Notifications from './pages/Notifications';
-import AIRecommendations from './pages/AIRecommendations';
-import BankIntegration from './pages/BankIntegration';
+
 import PaymentGateway from './pages/PaymentGateway';
 import DataImportExport from './pages/DataImportExport';
 import ExternalServices from './pages/ExternalServices';
@@ -33,7 +31,6 @@ const AppRoutes: React.FC = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/analytics-test" element={<Analytics />} />
         <Route path="*" element={
           <Layout>
             <Routes>
@@ -70,7 +67,6 @@ const AppRoutes: React.FC = () => {
                   <Goals />
                 </ProtectedRoute>
               } />
-              <Route path="/analytics" element={<Analytics />} />
               <Route path="/notifications" element={
                 <ProtectedRoute>
                   <Notifications />
@@ -79,16 +75,6 @@ const AppRoutes: React.FC = () => {
               <Route path="/chatbot" element={
                 <ProtectedRoute>
                   <Chatbot />
-                </ProtectedRoute>
-              } />
-              <Route path="/ai-recommendations" element={
-                <ProtectedRoute>
-                  <AIRecommendations />
-                </ProtectedRoute>
-              } />
-              <Route path="/bank-integration" element={
-                <ProtectedRoute>
-                  <BankIntegration />
                 </ProtectedRoute>
               } />
               <Route path="/payment-gateway" element={

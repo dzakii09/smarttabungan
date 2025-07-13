@@ -222,12 +222,25 @@ export const getTransactionStats = async (req: AuthRequest, res: Response) => {
 
     const where: any = { userId }
 
+    // Default to current month if no date range provided
     if (startDate && endDate) {
       where.date = {
         gte: new Date(startDate as string),
         lte: new Date(endDate as string)
       }
+    } else {
+      // Get current month data
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+      
+      where.date = {
+        gte: startOfMonth,
+        lte: endOfMonth
+      }
     }
+
+    console.log('TransactionStats Query:', JSON.stringify(where, null, 2));
 
     const [income, expense] = await Promise.all([
       prisma.transaction.aggregate({
@@ -240,13 +253,16 @@ export const getTransactionStats = async (req: AuthRequest, res: Response) => {
       })
     ])
 
+    console.log('Income aggregate:', income);
+    console.log('Expense aggregate:', expense);
+
     const totalIncome = income._sum.amount || 0
     const totalExpense = expense._sum.amount || 0
     const balance = totalIncome - totalExpense
 
     res.json({
-      income: totalIncome,
-      expense: totalExpense,
+      totalIncome: totalIncome,
+      totalExpense: totalExpense,
       balance
     })
   } catch (error) {

@@ -112,19 +112,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const token = getToken();
       if (!token) return;
 
+      console.log('Fetching dashboard stats...');
       const res = await api.get('/transactions/stats', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      const data = (res.data as any).data || res.data;
-      setDashboardStats({
+      // Backend returns data directly, not wrapped in data property
+      const data = res.data as any;
+      console.log('Dashboard stats response:', data);
+      console.log('Response structure:', {
+        hasData: !!data,
+        dataType: typeof data,
+        keys: data ? Object.keys(data) : 'no data'
+      });
+      
+      const stats = {
         totalBalance: data.balance || 0,
         monthlyIncome: data.totalIncome || 0,
         monthlyExpenses: data.totalExpense || 0,
         savingsRate: data.totalIncome > 0
           ? ((data.totalIncome - data.totalExpense) / data.totalIncome) * 100
           : 0,
-      });
+      };
+      
+      console.log('Processed stats:', stats);
+      setDashboardStats(stats);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     }
