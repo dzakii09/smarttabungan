@@ -1,38 +1,29 @@
-import React, { useEffect, useState } from 'react';
-import { Wallet, TrendingUp, TrendingDown, PiggyBank, Settings } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  Wallet, 
+  TrendingUp, 
+  TrendingDown, 
+  PiggyBank,
+  Settings
+} from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import StatsCard from '../components/dashboard/StatsCard';
 import ExpenseChart from '../components/dashboard/ExpenseChart';
+import AnalyticsSummary from '../components/dashboard/AnalyticsSummary';
+import SpendingInsights from '../components/dashboard/SpendingInsights';
+import AdvancedCharts from '../components/dashboard/AdvancedCharts';
+import MonthlyComparison from '../components/dashboard/MonthlyComparison';
+import AIDashboard from '../components/dashboard/AIDashboard';
 import RecentTransactions from '../components/dashboard/RecentTransactions';
 import GoalProgress from '../components/dashboard/GoalProgress';
-import CategoryStats from '../components/dashboard/CategoryStats';
 import BudgetOverview from '../components/dashboard/BudgetOverview';
-import AdvancedCharts from '../components/dashboard/AdvancedCharts';
-import SpendingInsights from '../components/dashboard/SpendingInsights';
-import MonthlyComparison from '../components/dashboard/MonthlyComparison';
-import AnalyticsSummary from '../components/dashboard/AnalyticsSummary';
-import AIDashboard from '../components/dashboard/AIDashboard';
+import CategoryStats from '../components/dashboard/CategoryStats';
 import api from '../api';
-
-interface UserPreferences {
-  dashboardLayout: string;
-  defaultCurrency: string;
-  language: string;
-  theme: 'light' | 'dark' | 'auto';
-  favoriteFeatures: string[];
-  financialGoals: {
-    monthlySavingsTarget: number;
-    emergencyFundTarget: number;
-    investmentPercentage: number;
-  };
-}
 
 const Dashboard: React.FC = () => {
   const { dashboardStats, fetchDashboardData, fetchTransactions, fetchGoals, fetchCategories, isAuthenticated, setBudgetStats, token } = useApp();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-  const [showLayoutSettings, setShowLayoutSettings] = useState(false);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -47,8 +38,7 @@ const Dashboard: React.FC = () => {
           fetchTransactions(),
           fetchGoals(),
           fetchCategories(),
-          fetchBudgetStats(),
-          fetchUserPreferences()
+          fetchBudgetStats()
         ]);
       } catch (err) {
         console.error('Error loading dashboard data:', err);
@@ -60,33 +50,6 @@ const Dashboard: React.FC = () => {
 
     loadDashboardData();
   }, [fetchDashboardData, fetchTransactions, fetchGoals, isAuthenticated]);
-
-  const fetchUserPreferences = async () => {
-    if (!token) return;
-    
-    try {
-      const response = await api.get('/personalization/preferences', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = (response.data as any).data || response.data;
-      setPreferences(data);
-    } catch (error) {
-      console.error('Error fetching user preferences:', error);
-      // Set default preferences
-      setPreferences({
-        dashboardLayout: 'default',
-        defaultCurrency: 'IDR',
-        language: 'id',
-        theme: 'light',
-        favoriteFeatures: ['dashboard', 'transactions', 'goals', 'budgets'],
-        financialGoals: {
-          monthlySavingsTarget: 0,
-          emergencyFundTarget: 0,
-          investmentPercentage: 0
-        }
-      });
-    }
-  };
 
   const fetchBudgetStats = async () => {
     if (!token) return;
@@ -111,66 +74,6 @@ const Dashboard: React.FC = () => {
         onTrackBudgets: 0
       });
     }
-  };
-
-  const updateLayoutPreference = async (layout: string) => {
-    if (!token || !preferences) return;
-    
-    try {
-      const response = await api.put('/personalization/preferences', {
-        ...preferences,
-        dashboardLayout: layout
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = (response.data as any).data || response.data;
-      setPreferences(data);
-      setShowLayoutSettings(false);
-    } catch (error) {
-      console.error('Error updating layout preference:', error);
-    }
-  };
-
-  const getLayoutConfig = () => {
-    const layout = preferences?.dashboardLayout || 'default';
-    
-    switch (layout) {
-      case 'compact':
-        return {
-          statsGrid: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4',
-          mainGrid: 'grid-cols-1 lg:grid-cols-4 gap-4',
-          leftColumn: 'lg:col-span-3',
-          rightColumn: 'space-y-4',
-          cardPadding: 'p-4',
-          showAdvancedCharts: false,
-          showMonthlyComparison: false
-        };
-      case 'detailed':
-        return {
-          statsGrid: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6',
-          mainGrid: 'grid-cols-1 lg:grid-cols-3 gap-6',
-          leftColumn: 'lg:col-span-2',
-          rightColumn: 'space-y-6',
-          cardPadding: 'p-6',
-          showAdvancedCharts: true,
-          showMonthlyComparison: true
-        };
-      default:
-        return {
-          statsGrid: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6',
-          mainGrid: 'grid-cols-1 lg:grid-cols-3 gap-6',
-          leftColumn: 'lg:col-span-2',
-          rightColumn: 'space-y-6',
-          cardPadding: 'p-6',
-          showAdvancedCharts: true,
-          showMonthlyComparison: true
-        };
-    }
-  };
-
-  const shouldShowComponent = (componentName: string) => {
-    if (!preferences) return true;
-    return preferences.favoriteFeatures.includes(componentName);
   };
 
   if (loading) {
@@ -200,8 +103,6 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  const layoutConfig = getLayoutConfig();
-
   return (
     <div className="min-h-screen bg-white py-8 px-2 md:px-8 animate-fade-in-up">
       {/* Header */}
@@ -210,12 +111,6 @@ const Dashboard: React.FC = () => {
           <h1 className="text-3xl font-extrabold text-neutral-800 font-inter mb-1">Dashboard</h1>
           <p className="text-neutral-500">Ringkasan keuangan dan insight terbaru Anda</p>
         </div>
-        <button
-          onClick={() => setShowLayoutSettings(true)}
-          className="px-4 py-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-xl font-bold shadow hover:scale-105 transition-all"
-        >
-          Pengaturan Tampilan
-        </button>
       </div>
 
       {/* Statistik */}
@@ -257,7 +152,8 @@ const Dashboard: React.FC = () => {
           <MonthlyComparison />
           <AIDashboard />
         </div>
-        {/* Right/Sidebar Column */}
+
+        {/* Right Column */}
         <div className="space-y-8">
           <RecentTransactions />
           <GoalProgress />
@@ -265,41 +161,6 @@ const Dashboard: React.FC = () => {
           <CategoryStats />
         </div>
       </div>
-
-      {/* Pengaturan Layout Modal */}
-      {showLayoutSettings && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">Pengaturan Tampilan Dashboard</h3>
-            <div className="space-y-3">
-              <button
-                onClick={() => updateLayoutPreference('default')}
-                className="w-full px-4 py-3 rounded-xl border border-neutral-200 font-semibold hover:bg-primary-50 transition-all"
-              >
-                Default
-              </button>
-              <button
-                onClick={() => updateLayoutPreference('compact')}
-                className="w-full px-4 py-3 rounded-xl border border-neutral-200 font-semibold hover:bg-primary-50 transition-all"
-              >
-                Compact
-              </button>
-              <button
-                onClick={() => updateLayoutPreference('detailed')}
-                className="w-full px-4 py-3 rounded-xl border border-neutral-200 font-semibold hover:bg-primary-50 transition-all"
-              >
-                Detailed
-              </button>
-            </div>
-            <button
-              onClick={() => setShowLayoutSettings(false)}
-              className="mt-6 w-full px-4 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-bold shadow hover:scale-105 transition-all"
-            >
-              Tutup
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

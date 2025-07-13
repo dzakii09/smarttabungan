@@ -9,7 +9,22 @@ export const getAIRecommendations = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id
     const recommendations = await aiService.getBudgetRecommendations(userId)
-    res.json(recommendations)
+    // Map ke format frontend
+    const mapped = recommendations.map((rec, idx) => ({
+      id: rec.categoryId || idx.toString(),
+      type: 'budget',
+      title: `Rekomendasi Budget untuk ${rec.categoryName}`,
+      description: `Disarankan anggaran bulanan: Rp ${rec.recommendedAmount.toLocaleString('id-ID')} (${rec.reason})`,
+      priority: 'medium',
+      impact: 'medium',
+      estimatedSavings: undefined,
+      estimatedTime: undefined,
+      difficulty: 'medium',
+      category: rec.categoryName,
+      actionable: true,
+      metadata: rec
+    }))
+    res.json({ data: mapped })
   } catch (error) {
     console.error('Get AI recommendations error:', error)
     res.status(500).json({ message: 'Server error' })

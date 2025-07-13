@@ -52,10 +52,10 @@ const AIDashboard: React.FC = () => {
     try {
       setLoading(true);
       const [recommendationsRes, insightsRes] = await Promise.all([
-        api.get('/personalization/recommendations', {
+        api.get('/ai/recommendations', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/personalization/insights', {
+        api.get('/ai/insights', {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -156,20 +156,25 @@ const AIDashboard: React.FC = () => {
       </div>
 
       {/* Financial Health Score */}
-      {insights && (
+      {insights && insights.financialHealth ? (
         <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-semibold text-neutral-800">Financial Health Score</h4>
             <span className={`text-lg font-bold ${getFinancialHealthColor(insights.financialHealth.score)}`}>
-              {insights.financialHealth.score}/100
+              {insights.financialHealth.score ?? '-'} /100
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-neutral-600">Risk Level:</span>
             <span className={`font-medium ${getRiskLevelColor(insights.financialHealth.riskLevel)}`}>
-              {insights.financialHealth.riskLevel.toUpperCase()}
+              {insights.financialHealth.riskLevel?.toUpperCase() ?? '-'}
             </span>
           </div>
+        </div>
+      ) : (
+        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100 text-neutral-400">
+          <h4 className="font-semibold">Financial Health Score</h4>
+          <span className="text-lg font-bold">-</span>
         </div>
       )}
 

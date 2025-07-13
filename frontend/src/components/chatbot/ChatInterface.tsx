@@ -46,10 +46,10 @@ const ChatInterface: React.FC = () => {
     try {
       const [context, recommendations, insights] = await Promise.all([
         chatbotService.getUserContext(),
-        api.get('/personalization/recommendations', {
+        api.get('/ai/recommendations', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/personalization/insights', {
+        api.get('/ai/insights', {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -94,11 +94,14 @@ const ChatInterface: React.FC = () => {
     }
 
     // Filter financial topic
-    const filter = filterFinancialTopic(inputMessage);
-    if (!filter.isFinancialTopic) {
-      setFilterWarning(filter.warning || 'Topik tidak terkait keuangan');
-      setSuggestedTopics(filter.suggestedTopics || []);
-      return;
+    const greetings = ['halo', 'hai', 'hello', 'selamat pagi', 'selamat siang', 'selamat malam'];
+    if (!greetings.some(greet => inputMessage.toLowerCase().includes(greet))) {
+      const filter = filterFinancialTopic(inputMessage);
+      if (!filter.isFinancialTopic) {
+        setFilterWarning(filter.warning || 'Topik tidak terkait keuangan');
+        setSuggestedTopics(filter.suggestedTopics || []);
+        return;
+      }
     }
 
     // Clear previous errors/warnings

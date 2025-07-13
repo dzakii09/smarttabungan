@@ -13,12 +13,11 @@ import GroupBudgetDetail from './pages/GroupBudgetDetail';
 import Analytics from './pages/Analytics';
 import Notifications from './pages/Notifications';
 import AIRecommendations from './pages/AIRecommendations';
-import UserPreferences from './pages/UserPreferences';
 import BankIntegration from './pages/BankIntegration';
 import PaymentGateway from './pages/PaymentGateway';
 import DataImportExport from './pages/DataImportExport';
 import ExternalServices from './pages/ExternalServices';
-import SecuritySettings from './pages/SecuritySettings';
+import Settings from './pages/Settings';
 import { Toaster } from 'sonner';
 
 // Protected Route Component
@@ -87,11 +86,6 @@ const AppRoutes: React.FC = () => {
                   <AIRecommendations />
                 </ProtectedRoute>
               } />
-              <Route path="/preferences" element={
-                <ProtectedRoute>
-                  <UserPreferences />
-                </ProtectedRoute>
-              } />
               <Route path="/bank-integration" element={
                 <ProtectedRoute>
                   <BankIntegration />
@@ -114,7 +108,7 @@ const AppRoutes: React.FC = () => {
               } />
               <Route path="/settings" element={
                 <ProtectedRoute>
-                  <SecuritySettings />
+                  <Settings />
                 </ProtectedRoute>
               } />
             </Routes>

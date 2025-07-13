@@ -96,13 +96,6 @@ const Sidebar: React.FC = () => {
       {/* Bottom Actions */}
       <div className={`px-1 pb-3 space-y-1 ${collapsed ? 'flex flex-col items-center' : ''}`}>
         <button
-          onClick={() => navigate('/preferences')}
-          className={`w-full flex items-center ${collapsed ? 'justify-center' : ''} px-2 py-2 text-left rounded-lg text-neutral-600 hover:bg-neutral-50 hover:text-primary-700 transition-all duration-200`}
-        >
-          <User size={16} className={`mr-0 ${collapsed ? '' : 'mr-2'}`} />
-          {!collapsed && <span className="font-medium font-inter text-sm">Preferences</span>}
-        </button>
-        <button
           onClick={() => navigate('/settings')}
           className={`w-full flex items-center ${collapsed ? 'justify-center' : ''} px-2 py-2 text-left rounded-lg text-neutral-600 hover:bg-neutral-50 hover:text-primary-700 transition-all duration-200`}
         >

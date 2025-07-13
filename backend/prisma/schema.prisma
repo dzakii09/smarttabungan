@@ -27,7 +27,6 @@ model User {
   budgets                        Budget[]
   chatMessages                   ChatMessage[]
   notifications                  Notification[]
-  preferences                    UserPreferences?
   bankAccounts                   BankAccount[]
   paymentTransactions            PaymentTransaction[]
   externalServices               ExternalService[]
@@ -262,25 +261,6 @@ model Notification {
   metadata Json? // Additional data like budgetId, goalId, etc.
 
   @@map("notifications")
-}
-
-model UserPreferences {
-  id                   String   @id @default(cuid())
-  dashboardLayout      String   @default("default")
-  defaultCurrency      String   @default("IDR")
-  language             String   @default("id")
-  theme                String   @default("light")
-  notificationSettings Json? // Email, push, inApp settings
-  financialGoals       Json? // Monthly savings target, emergency fund, investment percentage
-  spendingCategories   String[] @default([])
-  favoriteFeatures     String[] @default([])
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_preferences")
 }
 
 model BankAccount {

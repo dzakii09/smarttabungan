@@ -13,6 +13,9 @@ const router = express.Router();
 // Get AI recommendations
 router.get('/recommendations', auth as any, getAIRecommendations as any);
 
+// Get AI insights
+router.get('/insights', auth as any, getSpendingInsights as any);
+
 // Get budget suggestions
 router.get('/budget-suggestions', auth as any, getBudgetSuggestions as any);
 

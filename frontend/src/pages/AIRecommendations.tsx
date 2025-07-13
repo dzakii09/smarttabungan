@@ -69,10 +69,10 @@ const AIRecommendations: React.FC = () => {
     try {
       setLoading(true);
       const [recommendationsRes, insightsRes] = await Promise.all([
-        api.get('/personalization/recommendations', {
+        api.get('/ai/recommendations', {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        api.get('/personalization/insights', {
+        api.get('/ai/insights', {
           headers: { Authorization: `Bearer ${token}` }
         })
       ]);

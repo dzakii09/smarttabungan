@@ -12,7 +12,8 @@ const FINANCIAL_KEYWORDS = [
   'pengeluaran', 'expense', 'pendapatan', 'income', 'gaji', 'salary',
   
   // Saving & Investment
-  'tabung', 'saving', 'investasi', 'investment', 'deposito', 'deposit',
+  'tabung', 'menabung', 'tabungan', 'saving', 'menyimpan', 'uang saku', 'anak-anak', 'anak', 'edukasi keuangan',
+  'investasi', 'investment', 'deposito', 'deposit',
   'reksadana', 'mutual fund', 'saham', 'stock', 'obligasi', 'bond',
   'emas', 'gold', 'properti', 'property', 'crypto', 'bitcoin',
   
@@ -74,8 +75,13 @@ export function filterFinancialTopic(input: string): ChatbotFilter {
   const totalScore = financialScore + nonFinancialScore;
   const confidence = totalScore > 0 ? financialScore / totalScore : 0;
   
-  // Determine if it's a financial topic
-  const isFinancialTopic = financialScore > nonFinancialScore && confidence > 0.3;
+  // PERMISSIVE: Hanya blokir jika ada kata non-finansial DAN tidak ada kata finansial sama sekali
+  const isFinancialTopic = nonFinancialScore === 0 || financialScore > 0;
+  
+  // Logging for debug
+  if (typeof window !== 'undefined') {
+    console.log('[ChatbotFilter-Permissive]', {input, financialScore, foundFinancialKeywords, nonFinancialScore, foundNonFinancialKeywords, isFinancialTopic});
+  }
   
   // Generate suggestions if not financial
   let suggestedTopics: string[] = [];
