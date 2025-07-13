@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../utils/database';
-import geminiAIService from '../services/geminiAIService';
+import groqAIService from '../services/groqAIService';
 
 export const sendMessage = async (req: Request, res: Response) => {
   try {
@@ -18,8 +18,8 @@ export const sendMessage = async (req: Request, res: Response) => {
     // Get user context for personalized responses
     const userContext = await getUserContext(userId);
     
-    // Generate AI response using Gemini
-    const aiResponse = await generateAIResponse(message, userContext);
+    // Generate AI response using GROQ
+    const aiResponse = await groqAIService.generateChatbotResponse(message, userContext);
 
     // Store conversation in database (optional)
     await prisma.chatMessage.create({
@@ -124,16 +124,16 @@ async function getUserContext(userId: string) {
 
 async function generateAIResponse(message: string, userContext: any) {
   // Hanya gunakan Gemini AI, tanpa fallback manual
-  if (geminiAIService.isAvailable()) {
+  if (groqAIService.isAvailable()) {
     try {
-      const aiResponse = await geminiAIService.generateChatbotResponse(message, userContext);
+      const aiResponse = await groqAIService.generateChatbotResponse(message, userContext);
       return {
         message: aiResponse.message,
         suggestions: aiResponse.suggestions || [],
         insights: aiResponse.insights || []
       };
     } catch (error) {
-      console.error('Error with Gemini AI:', error);
+      console.error('Error with GROQ AI:', error);
       return {
         message: 'Maaf, layanan AI sedang tidak tersedia. Silakan coba lagi nanti.',
         suggestions: [],

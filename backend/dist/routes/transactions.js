@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const transactionController_1 = require("../controllers/transactionController");
+const auth_1 = require("../middleware/auth");
+const multer_1 = __importDefault(require("multer"));
+const scanReceiptController_1 = require("../controllers/scanReceiptController");
+const router = express_1.default.Router();
+const upload = (0, multer_1.default)();
+router.post('/', auth_1.auth, transactionController_1.createTransaction);
+router.get('/', auth_1.auth, transactionController_1.getTransactions);
+router.get('/stats', auth_1.auth, transactionController_1.getTransactionStats);
+router.get('/:id', auth_1.auth, transactionController_1.getTransactionById);
+router.put('/:id', auth_1.auth, transactionController_1.updateTransaction);
+router.delete('/:id', auth_1.auth, transactionController_1.deleteTransaction);
+router.post('/scan-receipt', upload.single('receipt'), scanReceiptController_1.scanReceipt);
+exports.default = router;

@@ -4,7 +4,6 @@ interface FinancialData {
   transactions: any[];
   goals: any[];
   budgets: any[];
-  preferences: any;
 }
 
 interface AIResponse {
@@ -159,7 +158,7 @@ class GeminiAIService {
 
   // Build prompts for different use cases
   private buildFinancialInsightsPrompt(data: FinancialData): string {
-    const { transactions, goals, budgets, preferences } = data;
+    const { transactions, goals, budgets } = data;
     
     const totalIncome = transactions
       .filter(t => t.type === 'income')
@@ -182,10 +181,7 @@ class GeminiAIService {
     - Tujuan keuangan: ${goals.length} tujuan
     - Budget aktif: ${budgets.length} budget
 
-    PREFERENSI PENGGUNA:
-    - Mata uang: ${preferences?.defaultCurrency || 'IDR'}
-    - Tema: ${preferences?.theme || 'light'}
-    - Bahasa: ${preferences?.language || 'id'}
+    // PREFERENSI PENGGUNA: (sudah tidak digunakan)
 
     TUGAS:
     1. Analisis pola pengeluaran dan pendapatan

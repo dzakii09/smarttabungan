@@ -93,17 +93,6 @@ const ChatInterface: React.FC = () => {
       return;
     }
 
-    // Filter financial topic
-    const greetings = ['halo', 'hai', 'hello', 'selamat pagi', 'selamat siang', 'selamat malam'];
-    if (!greetings.some(greet => inputMessage.toLowerCase().includes(greet))) {
-      const filter = filterFinancialTopic(inputMessage);
-      if (!filter.isFinancialTopic) {
-        setFilterWarning(filter.warning || 'Topik tidak terkait keuangan');
-        setSuggestedTopics(filter.suggestedTopics || []);
-        return;
-      }
-    }
-
     // Clear previous errors/warnings
     setValidationError(null);
     setFilterWarning(null);
@@ -122,10 +111,15 @@ const ChatInterface: React.FC = () => {
     setIsTyping(true);
 
     try {
-      // Generate AI response with enhanced context
-      const aiResponse = await generateEnhancedResponse(inputMessage);
-      
-      // Simulate typing delay
+      // Kirim pertanyaan ke backend (selalu gunakan LLM)
+      const response = await api.post('/chatbot/message', {
+        message: inputMessage,
+        timestamp: new Date().toISOString()
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const aiResponse = response.data as any; // <-- tambahkan type assertion agar tidak error
+
       setTimeout(() => {
         const botMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
@@ -133,11 +127,8 @@ const ChatInterface: React.FC = () => {
           sender: 'bot',
           timestamp: new Date().toISOString()
         };
-        
         setMessages(prev => [...prev, botMessage]);
         setIsTyping(false);
-        
-        // Set suggestions and insights if available
         if (aiResponse.suggestions) {
           setSuggestedTopics(aiResponse.suggestions);
         }
@@ -156,108 +147,6 @@ const ChatInterface: React.FC = () => {
       setMessages(prev => [...prev, errorMessage]);
       setIsTyping(false);
     }
-  };
-
-  const generateEnhancedResponse = async (message: string) => {
-    // Check if message is about recommendations
-    if (message.toLowerCase().includes('rekomendasi') || message.toLowerCase().includes('saran')) {
-      return generateRecommendationResponse();
-    }
-
-    // Check if message is about financial health
-    if (message.toLowerCase().includes('kesehatan') || message.toLowerCase().includes('score') || message.toLowerCase().includes('skor')) {
-      return generateFinancialHealthResponse();
-    }
-
-    // Check if message is about spending patterns
-    if (message.toLowerCase().includes('pengeluaran') || message.toLowerCase().includes('spending')) {
-      return generateSpendingAnalysisResponse();
-    }
-
-    // Default AI response
-    return aiGenerator.current.generateResponse(message);
-  };
-
-  const generateRecommendationResponse = () => {
-    if (!userContext?.recommendations || userContext.recommendations.length === 0) {
-      return {
-        message: 'Saat ini belum ada rekomendasi khusus untuk Anda. Coba tambahkan lebih banyak transaksi dan data keuangan untuk mendapatkan rekomendasi yang personal.',
-        suggestions: ['Bagaimana cara menambah transaksi?', 'Apa itu budget?', 'Bagaimana cara menabung efektif?'],
-        insights: []
-      };
-    }
-
-    const topRecommendations = userContext.recommendations.slice(0, 3);
-    const recommendationText = topRecommendations.map((rec: any, index: number) => 
-      `${index + 1}. ${rec.title}: ${rec.description}`
-    ).join('\n\n');
-
-    return {
-      message: `Berikut adalah rekomendasi teratas untuk Anda:\n\n${recommendationText}\n\nApakah Anda ingin saya jelaskan lebih detail tentang salah satu rekomendasi di atas?`,
-      suggestions: topRecommendations.map((rec: any) => `Jelaskan tentang ${rec.title}`),
-      insights: []
-    };
-  };
-
-  const generateFinancialHealthResponse = () => {
-    if (!userContext?.insights) {
-      return {
-        message: 'Saya belum bisa menganalisis kesehatan keuangan Anda karena data yang terbatas. Coba tambahkan lebih banyak transaksi untuk mendapatkan analisis yang akurat.',
-        suggestions: ['Bagaimana cara menambah transaksi?', 'Apa itu kesehatan keuangan?'],
-        insights: []
-      };
-    }
-
-    const health = userContext.insights.financialHealth;
-    const score = health.score;
-    let status = '';
-    let advice = '';
-
-    if (score >= 80) {
-      status = 'Sangat Baik';
-      advice = 'Anda memiliki kesehatan keuangan yang sangat baik! Pertahankan kebiasaan keuangan yang sudah ada.';
-    } else if (score >= 60) {
-      status = 'Baik';
-      advice = 'Kesehatan keuangan Anda baik, namun masih ada ruang untuk perbaikan.';
-    } else {
-      status = 'Perlu Perbaikan';
-      advice = 'Kesehatan keuangan Anda perlu perbaikan. Fokus pada menabung dan mengurangi pengeluaran.';
-    }
-
-    return {
-      message: `Skor Kesehatan Keuangan Anda: ${score}/100 (${status})\n\n${advice}\n\nRekomendasi:\n${health.recommendations.slice(0, 3).map((rec: string) => `• ${rec}`).join('\n')}`,
-      suggestions: ['Bagaimana cara meningkatkan skor?', 'Apa arti skor ini?', 'Rekomendasi lainnya'],
-      insights: health.recommendations
-    };
-  };
-
-  const generateSpendingAnalysisResponse = () => {
-    if (!userContext?.insights) {
-      return {
-        message: 'Saya belum bisa menganalisis pola pengeluaran Anda karena data yang terbatas. Coba tambahkan lebih banyak transaksi untuk mendapatkan analisis yang akurat.',
-        suggestions: ['Bagaimana cara menambah transaksi?', 'Apa itu analisis pengeluaran?'],
-        insights: []
-      };
-    }
-
-    const patterns = userContext.insights.spendingPatterns;
-    const topCategory = patterns.topCategories[0];
-    const trend = patterns.spendingTrend;
-
-    let trendText = '';
-    if (trend === 'increasing') {
-      trendText = 'Pengeluaran Anda cenderung meningkat.';
-    } else if (trend === 'decreasing') {
-      trendText = 'Pengeluaran Anda cenderung menurun - bagus!';
-    } else {
-      trendText = 'Pengeluaran Anda relatif stabil.';
-    }
-
-    return {
-      message: `Analisis Pengeluaran Anda:\n\n${trendText}\n\nKategori pengeluaran terbesar: ${topCategory?.category || 'Tidak ada data'} (${topCategory?.percentage?.toFixed(1) || 0}%)\n\nRata-rata pengeluaran harian: Rp ${patterns.averageDailySpending?.toLocaleString() || 0}\nRata-rata pengeluaran bulanan: Rp ${patterns.averageMonthlySpending?.toLocaleString() || 0}`,
-      suggestions: ['Bagaimana cara mengurangi pengeluaran?', 'Tips mengatur budget', 'Analisis kategori lainnya'],
-      insights: []
-    };
   };
 
   const handleQuickQuestion = (question: string) => {

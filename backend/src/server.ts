@@ -18,8 +18,12 @@ import dataImportExportRoutes from './routes/dataImportExport'
 import externalAPIRoutes from './routes/externalAPI'
 import groupBudgetRoutes from './routes/groupBudgets'
 import settingsRoutes from './routes/settings'
+import chatbotRoutes from './routes/chatbot';
 
 dotenv.config()
+
+console.log('ENV DEBUG:', require('fs').readFileSync('.env', 'utf8'));
+console.log('GROQ_API_KEY:', process.env.GROQ_API_KEY);
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -46,6 +50,7 @@ app.use('/api/data', dataImportExportRoutes)
 app.use('/api/external', externalAPIRoutes)
 app.use('/api/group-budgets', groupBudgetRoutes)
 app.use('/api/settings', settingsRoutes)
+app.use('/api/chatbot', chatbotRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -34,8 +34,10 @@ const FINANCIAL_KEYWORDS = [
   'trend', 'tren', 'perbandingan', 'comparison', 'rasio', 'ratio',
   
   // Common Financial Terms
-  'keuangan', 'finance', 'uang', 'money', 'harga', 'price', 'biaya', 'cost',
-  'untung', 'profit', 'rugi', 'loss', 'modal', 'capital', 'aset', 'asset'
+  'keuangan', 'finance', 'uang', 'duit', 'money', 'harga', 'price', 'biaya', 'cost',
+  'untung', 'profit', 'rugi', 'loss', 'modal', 'capital', 'aset', 'asset',
+  // Everyday terms
+  'habis', 'boros', 'hemat', 'belanja', 'gaji', 'pengeluaran', 'tabungan', 'pendapatan', 'pemasukan', 'keluar', 'masuk', 'sisa', 'saldo', 'dompet', 'tips', 'cara', 'kenapa', 'mengapa', 'kenapa uang', 'kenapa cepat habis', 'kenapa boros', 'kenapa saldo', 'kenapa pengeluaran', 'kenapa tabungan', 'kenapa gaji', 'kenapa pendapatan', 'kenapa pemasukan', 'kenapa keluar', 'kenapa masuk', 'kenapa sisa', 'kenapa dompet', 'kenapa keuangan', 'kenapa budget', 'kenapa anggaran', 'kenapa hemat', 'kenapa tips', 'mengatur', 'mengelola', 'menghemat', 'menghabiskan', 'mengelola uang', 'mengatur uang', 'mengatur pengeluaran', 'mengatur tabungan', 'mengatur gaji', 'mengatur pendapatan', 'mengatur pemasukan', 'mengatur keluar', 'mengatur masuk', 'mengatur sisa', 'mengatur saldo', 'mengatur dompet', 'mengatur keuangan', 'mengatur budget', 'mengatur anggaran', 'mengatur hemat', 'mengatur tips', 'cara hemat', 'cara menabung', 'cara investasi', 'cara mengatur', 'cara mengelola', 'cara menghemat', 'cara menghabiskan', 'cara mengelola uang', 'cara mengatur uang', 'cara mengatur pengeluaran', 'cara mengatur tabungan', 'cara mengatur gaji', 'cara mengatur pendapatan', 'cara mengatur pemasukan', 'cara mengatur keluar', 'cara mengatur masuk', 'cara mengatur sisa', 'cara mengatur saldo', 'cara mengatur dompet', 'cara mengatur keuangan', 'cara mengatur budget', 'cara mengatur anggaran', 'cara mengatur hemat', 'cara mengatur tips'
 ];
 
 // Kata kunci yang TIDAK terkait keuangan (untuk filtering)
@@ -75,7 +77,7 @@ export function filterFinancialTopic(input: string): ChatbotFilter {
   const totalScore = financialScore + nonFinancialScore;
   const confidence = totalScore > 0 ? financialScore / totalScore : 0;
   
-  // PERMISSIVE: Hanya blokir jika ada kata non-finansial DAN tidak ada kata finansial sama sekali
+  // PERMISSIVE: Blokir hanya jika ada kata non-finansial DAN tidak ada kata finansial sama sekali
   const isFinancialTopic = nonFinancialScore === 0 || financialScore > 0;
   
   // Logging for debug
