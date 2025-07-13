@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import Tesseract from 'tesseract.js';
-import geminiAIService from '../services/geminiAIService';
+import groqAIService from '../services/groqAIService';
 
 export const scanReceipt = async (req: Request, res: Response) => {
   try {
@@ -12,8 +12,8 @@ export const scanReceipt = async (req: Request, res: Response) => {
     // OCR dengan Tesseract
     const { data: { text } } = await Tesseract.recognize(req.file.buffer, 'eng');
 
-    // Kirim ke Gemini untuk parsing & klasifikasi
-    const result = await geminiAIService.classifyReceipt(text);
+    // Kirim ke GROQ untuk parsing & klasifikasi
+    const result = await groqAIService.classifyReceipt(text);
 
     res.json({ ocrText: text, items: result });
   } catch (err) {

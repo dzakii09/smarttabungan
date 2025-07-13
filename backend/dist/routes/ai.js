@@ -7,6 +7,14 @@ const express_1 = __importDefault(require("express"));
 const aiController_1 = require("../controllers/aiController");
 const auth_1 = require("../middleware/auth");
 const router = express_1.default.Router();
+// Debug middleware untuk AI routes
+router.use((req, res, next) => {
+    console.log('🤖 AI Route accessed:', req.path);
+    console.log('🔑 GROQ_API_KEY exists in AI route:', !!process.env.GROQ_API_KEY);
+    next();
+});
+// Chatbot endpoint - ADD THIS
+router.post('/chat', auth_1.auth, aiController_1.chatWithAI);
 // Get AI recommendations
 router.get('/recommendations', auth_1.auth, aiController_1.getAIRecommendations);
 // Get AI insights

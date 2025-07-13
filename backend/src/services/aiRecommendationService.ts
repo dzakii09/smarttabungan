@@ -1,5 +1,5 @@
 import prisma from '../utils/database';
-import geminiAIService from './geminiAIService';
+import groqAIService from './groqAIService';
 
 interface FinancialRecommendation {
   id: string;
@@ -36,11 +36,11 @@ class AIRecommendationService {
         this.getUserBudgets(userId)
       ]);
 
-      // Try Gemini AI first
-      if (geminiAIService.isAvailable()) {
+      // Try GROQ AI first
+      if (groqAIService.isAvailable()) {
         try {
-          const financialData = { transactions, goals, budgets };
-          const aiResponse = await geminiAIService.generatePersonalizedRecommendations(userId, financialData);
+          const financialData = { transactions, goals, budgets, preferences: {} };
+          const aiResponse = await groqAIService.generatePersonalizedRecommendations(userId, financialData);
           
           if (aiResponse.recommendations && aiResponse.recommendations.length > 0) {
             return aiResponse.recommendations.map((rec: any) => ({
@@ -59,7 +59,7 @@ class AIRecommendationService {
             }));
           }
         } catch (error) {
-          console.error('Error with Gemini AI, falling back to rule-based:', error);
+          console.error('Error with GROQ AI, falling back to rule-based:', error);
         }
       }
 

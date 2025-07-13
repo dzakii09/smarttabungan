@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const database_1 = __importDefault(require("../utils/database"));
-const geminiAIService_1 = __importDefault(require("./geminiAIService"));
+const groqAIService_1 = __importDefault(require("./groqAIService"));
 class AIRecommendationService {
     // Get personalized AI recommendations
     getPersonalizedRecommendations(userId) {
@@ -25,11 +25,11 @@ class AIRecommendationService {
                     this.getUserGoals(userId),
                     this.getUserBudgets(userId)
                 ]);
-                // Try Gemini AI first
-                if (geminiAIService_1.default.isAvailable()) {
+                // Try GROQ AI first
+                if (groqAIService_1.default.isAvailable()) {
                     try {
-                        const financialData = { transactions, goals, budgets };
-                        const aiResponse = yield geminiAIService_1.default.generatePersonalizedRecommendations(userId, financialData);
+                        const financialData = { transactions, goals, budgets, preferences: {} };
+                        const aiResponse = yield groqAIService_1.default.generatePersonalizedRecommendations(userId, financialData);
                         if (aiResponse.recommendations && aiResponse.recommendations.length > 0) {
                             return aiResponse.recommendations.map((rec) => ({
                                 id: rec.id || `rec_${Date.now()}`,
@@ -48,7 +48,7 @@ class AIRecommendationService {
                         }
                     }
                     catch (error) {
-                        console.error('Error with Gemini AI, falling back to rule-based:', error);
+                        console.error('Error with GROQ AI, falling back to rule-based:', error);
                     }
                 }
                 // Fallback to rule-based recommendations

@@ -22,7 +22,6 @@ import chatbotRoutes from './routes/chatbot';
 
 dotenv.config()
 
-console.log('ENV DEBUG:', require('fs').readFileSync('.env', 'utf8'));
 console.log('GROQ_API_KEY:', process.env.GROQ_API_KEY);
 
 const app = express()

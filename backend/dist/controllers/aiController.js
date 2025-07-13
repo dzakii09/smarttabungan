@@ -12,8 +12,51 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getFinancialAdvice = exports.getSavingsTips = exports.getBudgetSuggestions = exports.getSpendingInsights = exports.getAIRecommendations = void 0;
+exports.getFinancialAdvice = exports.getSavingsTips = exports.getBudgetSuggestions = exports.getSpendingInsights = exports.getAIRecommendations = exports.chatWithAI = void 0;
 const aiService_1 = __importDefault(require("../services/aiService"));
+const groqService_1 = __importDefault(require("../services/groqService")); // Add this import
+// Add this new function for chatbot
+const chatWithAI = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        console.log('🤖 ChatWithAI: Received request');
+        const { message, context } = req.body;
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!message || typeof message !== 'string') {
+            return res.status(400).json({ error: 'Message is required' });
+        }
+        console.log('🤖 ChatWithAI: Processing message:', message);
+        console.log('🤖 ChatWithAI: User ID:', userId);
+        // Get user context if not provided
+        let userContext = context;
+        if (!userContext && userId) {
+            try {
+                const insights = yield aiService_1.default.getSpendingInsights(userId);
+                userContext = { insights };
+            }
+            catch (err) {
+                console.log('⚠️ ChatWithAI: Could not get user context:', err);
+            }
+        }
+        // Generate response using Groq
+        const aiResponse = yield groqService_1.default.generateChatResponse(message, userContext);
+        console.log('✅ ChatWithAI: Response generated successfully');
+        res.json({
+            message: aiResponse,
+            suggestions: [], // You can add suggestions based on the message
+            insights: [] // You can add insights if needed
+        });
+    }
+    catch (error) {
+        console.error('❌ ChatWithAI error:', error);
+        console.error('❌ ChatWithAI error stack:', error.stack);
+        res.status(500).json({
+            error: 'Failed to process chat message',
+            message: error.message || 'Internal server error'
+        });
+    }
+});
+exports.chatWithAI = chatWithAI;
 const getAIRecommendations = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {

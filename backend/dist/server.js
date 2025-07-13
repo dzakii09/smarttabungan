@@ -25,6 +25,7 @@ const groupBudgets_1 = __importDefault(require("./routes/groupBudgets"));
 const settings_1 = __importDefault(require("./routes/settings"));
 const chatbot_1 = __importDefault(require("./routes/chatbot"));
 dotenv_1.default.config();
+console.log('GROQ_API_KEY:', process.env.GROQ_API_KEY);
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
 // Middleware

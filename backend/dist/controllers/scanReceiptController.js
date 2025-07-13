@@ -14,7 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.scanReceipt = void 0;
 const tesseract_js_1 = __importDefault(require("tesseract.js"));
-const geminiAIService_1 = __importDefault(require("../services/geminiAIService"));
+const groqAIService_1 = __importDefault(require("../services/groqAIService"));
 const scanReceipt = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (!req.file) {
@@ -23,8 +23,8 @@ const scanReceipt = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         }
         // OCR dengan Tesseract
         const { data: { text } } = yield tesseract_js_1.default.recognize(req.file.buffer, 'eng');
-        // Kirim ke Gemini untuk parsing & klasifikasi
-        const result = yield geminiAIService_1.default.classifyReceipt(text);
+        // Kirim ke GROQ untuk parsing & klasifikasi
+        const result = yield groqAIService_1.default.classifyReceipt(text);
         res.json({ ocrText: text, items: result });
     }
     catch (err) {

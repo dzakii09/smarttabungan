@@ -334,8 +334,8 @@ const searchUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         const users = yield database_1.default.user.findMany({
             where: {
                 OR: [
-                    { name: { contains: query, mode: 'insensitive' } },
-                    { email: { contains: query, mode: 'insensitive' } }
+                    { name: { contains: query } },
+                    { email: { contains: query } }
                 ],
                 NOT: { id: userId } // Exclude current user
             },
