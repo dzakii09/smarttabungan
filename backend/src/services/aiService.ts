@@ -13,13 +13,6 @@ interface CategoryPrediction {
   confidence: number;
 }
 
-interface BudgetRecommendation {
-  categoryId: string;
-  categoryName: string;
-  recommendedAmount: number;
-  reason: string;
-}
-
 class AIService {
   // Simple keyword-based categorization
   private categoryKeywords: { [key: string]: string[] } = {
@@ -108,75 +101,6 @@ class AIService {
 
     // Only return prediction if confidence is above threshold
     return highestConfidence >= 0.3 ? bestMatch : null;
-  }
-
-  // Smart budget recommendations based on historical data
-  async getBudgetRecommendations(userId: string): Promise<BudgetRecommendation[]> {
-    const recommendations: BudgetRecommendation[] = [];
-
-    // Get user's transaction history for the last 3 months
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        userId,
-        type: 'expense',
-        date: {
-          gte: threeMonthsAgo
-        },
-        categoryId: {
-          not: null
-        }
-      },
-      include: {
-        category: true
-      }
-    });
-
-    // Group transactions by category
-    const categoryStats = new Map<string, { total: number; count: number; category: any }>();
-
-    transactions.forEach(transaction => {
-      if (transaction.category) {
-        const existing = categoryStats.get(transaction.categoryId!);
-        if (existing) {
-          existing.total += transaction.amount;
-          existing.count += 1;
-        } else {
-          categoryStats.set(transaction.categoryId!, {
-            total: transaction.amount,
-            count: 1,
-            category: transaction.category
-          });
-        }
-      }
-    });
-
-    // Calculate recommendations
-    for (const [categoryId, stats] of categoryStats) {
-      const averageMonthly = stats.total / 3; // 3 months
-      const recommendedAmount = Math.round(averageMonthly * 1.1); // 10% buffer
-
-      let reason = '';
-      if (stats.count >= 10) {
-        reason = 'Berdasarkan pola pengeluaran yang konsisten';
-      } else if (stats.count >= 5) {
-        reason = 'Berdasarkan beberapa transaksi terakhir';
-      } else {
-        reason = 'Berdasarkan transaksi yang ada';
-      }
-
-      recommendations.push({
-        categoryId,
-        categoryName: stats.category.name,
-        recommendedAmount,
-        reason
-      });
-    }
-
-    // Sort by recommended amount (highest first)
-    return recommendations.sort((a, b) => b.recommendedAmount - a.recommendedAmount);
   }
 
   // Get spending insights

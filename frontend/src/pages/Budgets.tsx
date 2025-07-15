@@ -44,11 +44,9 @@ const Budgets: React.FC = () => {
   const token = localStorage.getItem('token');
   const { /* context lainnya */ } = useApp();
   const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [recommendations, setRecommendations] = useState<BudgetRecommendation[]>([]);
   const [stats, setStats] = useState<BudgetStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showRecommendationsModal, setShowRecommendationsModal] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
   const [editMode, setEditMode] = useState(false);
 
@@ -63,7 +61,6 @@ const Budgets: React.FC = () => {
   useEffect(() => {
     if (token) {
       fetchBudgets();
-      fetchRecommendations();
       fetchStats();
     }
   }, [token]);
@@ -79,20 +76,6 @@ const Budgets: React.FC = () => {
       console.error('Error fetching budgets:', error);
       toast.error('Gagal memuat data budget');
       setBudgets([]); // Set empty array on error
-    }
-  };
-
-  const fetchRecommendations = async () => {
-    try {
-      const response = await api.get('/budgets/recommendations', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = (response.data as any).data || response.data;
-      setRecommendations(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Error fetching recommendations:', error);
-      setRecommendations([]); // Set empty array on error
-      // Don't show error for recommendations as it's optional
     }
   };
 
@@ -141,30 +124,6 @@ const Budgets: React.FC = () => {
     } catch (error: any) {
       console.error('Error creating budget:', error);
       const errorMessage = error.response?.data?.message || 'Gagal membuat budget';
-      toast.error(errorMessage);
-    }
-  };
-
-  const handleCreateFromRecommendation = async (recommendation: BudgetRecommendation) => {
-    try {
-      const response = await api.post('/budgets/from-recommendation', {
-        categoryId: recommendation.categoryId,
-        recommendedAmount: recommendation.recommendedAmount
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if ((response.data as any).success) {
-        toast.success('Budget berhasil dibuat dari rekomendasi');
-        setShowRecommendationsModal(false);
-        await fetchBudgets();
-        await fetchStats();
-      } else {
-        toast.error((response.data as any).message || 'Gagal membuat budget dari rekomendasi');
-      }
-    } catch (error: any) {
-      console.error('Error creating budget from recommendation:', error);
-      const errorMessage = error.response?.data?.message || 'Gagal membuat budget dari rekomendasi';
       toast.error(errorMessage);
     }
   };
@@ -258,13 +217,6 @@ const Budgets: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900">Budget Management</h1>
         <div className="flex gap-2">
           <button
-            onClick={() => setShowRecommendationsModal(true)}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
-          >
-            <TrendingUp className="w-4 h-4" />
-            AI Recommendations
-          </button>
-          <button
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
           >
@@ -304,7 +256,7 @@ const Budgets: React.FC = () => {
         <div className="divide-y divide-gray-200">
           {budgets.length === 0 ? (
             <div className="p-6 text-center text-gray-500">
-              Belum ada budget yang dibuat. Mulai dengan membuat budget baru atau gunakan rekomendasi AI.
+              Belum ada budget yang dibuat. Mulai dengan membuat budget baru.
             </div>
           ) : (
             budgets.map((budget) => (
@@ -428,50 +380,6 @@ const Budgets: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* AI Recommendations Modal */}
-      {showRecommendationsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Rekomendasi Budget AI</h2>
-            {recommendations.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">
-                Belum ada rekomendasi yang tersedia. Pastikan Anda memiliki data transaksi yang cukup.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {recommendations.map((recommendation) => (
-                  <div key={recommendation.categoryId} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-gray-900">{recommendation.categoryName}</h3>
-                        <p className="text-sm text-gray-500 mt-1">{recommendation.reason}</p>
-                        <p className="text-lg font-semibold text-blue-600 mt-2">
-                          {formatCurrency(recommendation.recommendedAmount)}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleCreateFromRecommendation(recommendation)}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm"
-                      >
-                        Terapkan
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="mt-6">
-              <button
-                onClick={() => setShowRecommendationsModal(false)}
-                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-              >
-                Tutup
-              </button>
-            </div>
           </div>
         </div>
       )}

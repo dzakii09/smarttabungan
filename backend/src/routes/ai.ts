@@ -1,8 +1,6 @@
 import express from 'express';
 import { 
-  getAIRecommendations,
   getSpendingInsights,
-  getBudgetSuggestions,
   getSavingsTips,
   getFinancialAdvice,
   chatWithAI  // Add this import
@@ -21,14 +19,8 @@ router.use((req, res, next) => {
 // Chatbot endpoint - ADD THIS
 router.post('/chat', auth as any, chatWithAI as any);
 
-// Get AI recommendations
-router.get('/recommendations', auth as any, getAIRecommendations as any);
-
 // Get AI insights
 router.get('/insights', auth as any, getSpendingInsights as any);
-
-// Get budget suggestions
-router.get('/budget-suggestions', auth as any, getBudgetSuggestions as any);
 
 // Get spending insights
 router.get('/spending-insights', auth as any, getSpendingInsights as any);

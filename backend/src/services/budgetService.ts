@@ -442,28 +442,6 @@ class BudgetService {
       };
     }
   }
-
-  // Create budget from AI recommendation
-  async createBudgetFromRecommendation(userId: string, categoryId: string, recommendedAmount: number) {
-    try {
-      if (!userId || !categoryId || !recommendedAmount) {
-        throw new Error('User ID, Category ID, and Recommended Amount are required');
-      }
-
-      const startDate = new Date();
-      startDate.setDate(1); // Start from beginning of current month
-      
-      return await this.createBudget(userId, {
-        amount: recommendedAmount,
-        period: 'monthly',
-        startDate,
-        categoryId
-      });
-    } catch (error) {
-      console.error('Error creating budget from recommendation:', error);
-      throw error;
-    }
-  }
 }
 
 export default new BudgetService(); 

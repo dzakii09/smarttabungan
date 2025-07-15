@@ -228,58 +228,6 @@ class BudgetController {
     }
   }
 
-  // Get AI budget recommendations
-  async getBudgetRecommendations(req: AuthRequest, res: Response) {
-    try {
-      const userId = req.user?.id;
-      const recommendations = await aiService.getBudgetRecommendations(userId);
-
-      res.json({
-        success: true,
-        data: recommendations
-      });
-    } catch (error: any) {
-      console.error('Get budget recommendations error:', error);
-      res.status(500).json({
-        success: false,
-        message: error.message || 'Server error'
-      });
-    }
-  }
-
-  // Create budget from AI recommendation
-  async createBudgetFromRecommendation(req: AuthRequest, res: Response) {
-    try {
-      const userId = req.user?.id;
-      const { categoryId, recommendedAmount } = req.body;
-
-      if (!categoryId || !recommendedAmount) {
-        return res.status(400).json({
-          success: false,
-          message: 'CategoryId dan recommendedAmount harus diisi'
-        });
-      }
-
-      const budget = await budgetService.createBudgetFromRecommendation(
-        userId,
-        categoryId,
-        parseFloat(recommendedAmount)
-      );
-
-      res.status(201).json({
-        success: true,
-        message: 'Budget berhasil dibuat dari rekomendasi AI',
-        data: budget
-      });
-    } catch (error: any) {
-      console.error('Create budget from recommendation error:', error);
-      res.status(500).json({
-        success: false,
-        message: error.message || 'Server error'
-      });
-    }
-  }
-
   // Get budget insights
   async getBudgetInsights(req: AuthRequest, res: Response) {
     try {
