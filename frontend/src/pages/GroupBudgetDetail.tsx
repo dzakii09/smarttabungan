@@ -162,7 +162,7 @@ const GroupBudgetDetail: React.FC = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Group Budget Not Found</h2>
           <button
-            onClick={() => navigate('/group-budgets')}
+            onClick={() => navigate('/tabungan-bersama')}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
           >
             Back to Group Budgets
@@ -177,7 +177,7 @@ const GroupBudgetDetail: React.FC = () => {
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <button
-          onClick={() => navigate('/group-budgets')}
+          onClick={() => navigate('/tabungan-bersama')}
           className="p-2 hover:bg-gray-100 rounded-lg"
         >
           <ArrowLeft size={20} />
@@ -362,7 +362,10 @@ const GroupBudgetDetail: React.FC = () => {
                         const confirmedMembers = confirmations.filter(m => m.confirmedAt).length
                         const progress = totalMembers === 0 ? 0 : (confirmedMembers / totalMembers) * 100
                         return (
-                          <span className="font-medium">
+                          <span className={`font-medium ${
+                            progress >= 100 ? 'text-green-600' :
+                            progress >= 80 ? 'text-blue-600' : 'text-gray-600'
+                          }`}>
                             {progress.toFixed(1)}% ({confirmedMembers}/{totalMembers} konfirmasi)
                           </span>
                         )

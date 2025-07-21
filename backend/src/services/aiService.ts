@@ -1,108 +1,9 @@
-import prisma from '../utils/database';
+import { PrismaClient } from '@prisma/client';
+import groqService from './groqService';
 
-interface TransactionData {
-  description: string;
-  amount: number;
-  date: Date;
-  type: 'income' | 'expense';
-}
-
-interface CategoryPrediction {
-  categoryId: string;
-  categoryName: string;
-  confidence: number;
-}
+const prisma = new PrismaClient();
 
 class AIService {
-  // Simple keyword-based categorization
-  private categoryKeywords: { [key: string]: string[] } = {
-    'Makanan & Minuman': [
-      'makan', 'minum', 'restoran', 'warung', 'cafe', 'kopi', 'nasi', 'ayam', 'bakso',
-      'mie', 'sate', 'goreng', 'tahu', 'tempe', 'sayur', 'buah', 'snack', 'jajan',
-      'food', 'drink', 'restaurant', 'coffee', 'rice', 'chicken', 'noodle'
-    ],
-    'Transportasi': [
-      'transport', 'bus', 'kereta', 'taxi', 'grab', 'gojek', 'ojek', 'bensin',
-      'bensin', 'pertamax', 'pertalite', 'parkir', 'tol', 'angkot', 'mrt', 'lrt',
-      'transportation', 'gas', 'fuel', 'parking', 'toll'
-    ],
-    'Belanja': [
-      'belanja', 'shopping', 'mall', 'supermarket', 'market', 'toko', 'shop',
-      'pakaian', 'baju', 'celana', 'sepatu', 'tas', 'aksesoris', 'fashion',
-      'clothes', 'shoes', 'bag', 'accessories'
-    ],
-    'Tagihan': [
-      'tagihan', 'bill', 'listrik', 'air', 'internet', 'wifi', 'pulsa', 'token',
-      'electricity', 'water', 'internet', 'phone', 'credit'
-    ],
-    'Hiburan': [
-      'hiburan', 'entertainment', 'film', 'movie', 'bioskop', 'cinema', 'game',
-      'konser', 'concert', 'tiket', 'ticket', 'hobi', 'hobby'
-    ],
-    'Investasi': [
-      'investasi', 'investment', 'saham', 'stock', 'reksadana', 'mutual fund',
-      'emas', 'gold', 'deposito', 'deposit', 'crypto', 'bitcoin'
-    ]
-  };
-
-  // Auto-categorization based on description
-  async predictCategory(transaction: TransactionData): Promise<CategoryPrediction | null> {
-    if (transaction.type === 'income') {
-      return null; // Income categories are simpler, skip AI for now
-    }
-
-    const description = transaction.description.toLowerCase();
-    let bestMatch: CategoryPrediction | null = null;
-    let highestConfidence = 0;
-
-    // Get all expense categories
-    const categories = await prisma.category.findMany({
-      where: { type: 'expense' }
-    });
-
-    for (const category of categories) {
-      const keywords = this.categoryKeywords[category.name] || [];
-      let confidence = 0;
-
-      // Check keyword matches
-      for (const keyword of keywords) {
-        if (description.includes(keyword.toLowerCase())) {
-          confidence += 0.3; // Base confidence for keyword match
-          
-          // Bonus for exact word match
-          if (description.includes(` ${keyword.toLowerCase()} `) || 
-              description.startsWith(keyword.toLowerCase()) ||
-              description.endsWith(keyword.toLowerCase())) {
-            confidence += 0.2;
-          }
-        }
-      }
-
-      // Amount-based heuristics
-      if (category.name === 'Makanan & Minuman' && transaction.amount <= 100000) {
-        confidence += 0.1;
-      }
-      if (category.name === 'Transportasi' && transaction.amount <= 50000) {
-        confidence += 0.1;
-      }
-      if (category.name === 'Tagihan' && transaction.amount >= 100000) {
-        confidence += 0.1;
-      }
-
-      if (confidence > highestConfidence) {
-        highestConfidence = confidence;
-        bestMatch = {
-          categoryId: category.id,
-          categoryName: category.name,
-          confidence: Math.min(confidence, 1.0)
-        };
-      }
-    }
-
-    // Only return prediction if confidence is above threshold
-    return highestConfidence >= 0.3 ? bestMatch : null;
-  }
-
   // Get spending insights
   async getSpendingInsights(userId: string): Promise<string[]> {
     const insights: string[] = [];
@@ -164,150 +65,331 @@ class AIService {
       dailySpending.set(date, (dailySpending.get(date) || 0) + 1);
     });
 
-    const averageDailyTransactions = transactions.length / 30;
-    if (averageDailyTransactions > 3) {
-      insights.push('Anda melakukan transaksi lebih dari 3 kali per hari rata-rata');
+    const mostSpendingDay = Array.from(dailySpending.entries())
+      .sort((a, b) => b[1] - a[1])[0];
+
+    if (mostSpendingDay) {
+      insights.push(`Hari dengan pengeluaran terbanyak adalah ${mostSpendingDay[0]} (${mostSpendingDay[1]} transaksi)`);
     }
 
     return insights;
   }
 
-  // Predict next month's spending
-  async predictNextMonthSpending(userId: string): Promise<{ total: number; breakdown: any[] }> {
-    // Get last 3 months data
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  // Get savings tips
+  async getSavingsTips(userId: string): Promise<string[]> {
+    const tips: string[] = [];
 
-    const transactions = await prisma.transaction.findMany({
-      where: {
-        userId,
-        type: 'expense',
-        date: {
-          gte: threeMonthsAgo
-        },
-        categoryId: {
-          not: null
-        }
-      },
-      include: {
-        category: true
-      }
-    });
+    // Get user's financial data
+    const [transactions, goals] = await Promise.all([
+      prisma.transaction.findMany({
+        where: { userId },
+        include: { category: true }
+      }),
+      prisma.goal.findMany({
+        where: { userId }
+      })
+    ]);
 
-    // Group by category and calculate monthly average
-    const categoryAverages = new Map<string, { total: number; count: number; category: any }>();
+    const income = transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
 
-    transactions.forEach(transaction => {
-      if (transaction.category) {
-        const existing = categoryAverages.get(transaction.categoryId!);
-        if (existing) {
-          existing.total += transaction.amount;
-          existing.count += 1;
-        } else {
-          categoryAverages.set(transaction.categoryId!, {
-            total: transaction.amount,
-            count: 1,
-            category: transaction.category
-          });
-        }
-      }
-    });
+    const expenses = transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
 
-    let totalPredicted = 0;
-    const breakdown: any[] = [];
+    const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
 
-    for (const [categoryId, stats] of categoryAverages) {
-      const monthlyAverage = stats.total / 3; // 3 months
-      const predicted = Math.round(monthlyAverage * 1.05); // 5% growth assumption
-
-      breakdown.push({
-        categoryId,
-        categoryName: stats.category.name,
-        predictedAmount: predicted,
-        confidence: Math.min(stats.count / 10, 1.0) // More data = higher confidence
-      });
-
-      totalPredicted += predicted;
+    // Generate tips based on savings rate
+    if (savingsRate < 10) {
+      tips.push('Coba sisihkan minimal 10% dari penghasilan untuk tabungan');
+      tips.push('Buat budget bulanan untuk mengontrol pengeluaran');
+    } else if (savingsRate < 20) {
+      tips.push('Bagus! Tingkatkan tabungan ke 20% untuk keamanan finansial');
+      tips.push('Pertimbangkan investasi untuk pertumbuhan kekayaan');
+    } else {
+      tips.push('Excellent! Anda menabung dengan sangat baik');
+      tips.push('Pertimbangkan diversifikasi investasi');
     }
 
-    return {
-      total: totalPredicted,
-      breakdown: breakdown.sort((a, b) => b.predictedAmount - a.predictedAmount)
-    };
+    // Tips based on goals
+    if (goals.length === 0) {
+      tips.push('Buat tujuan keuangan yang spesifik untuk motivasi menabung');
+    } else {
+      const urgentGoals = goals.filter(g => {
+        const daysLeft = Math.ceil((new Date(g.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        return daysLeft < 90;
+      });
+
+      if (urgentGoals.length > 0) {
+        tips.push(`Fokus pada ${urgentGoals.length} tujuan yang mendekati deadline`);
+      }
+    }
+
+    return tips;
+  }
+
+  // Get financial advice
+  async getFinancialAdvice(userId: string): Promise<string[]> {
+    const advice: string[] = [];
+
+    // Get user's financial data
+    const [transactions, budgets] = await Promise.all([
+      prisma.transaction.findMany({
+        where: { userId },
+        include: { category: true }
+      }),
+      prisma.budget.findMany({
+        where: { userId }
+      })
+    ]);
+
+    const expenses = transactions.filter(t => t.type === 'expense');
+    const categorySpending = new Map<string, number>();
+
+    expenses.forEach(t => {
+      if (t.category) {
+        const current = categorySpending.get(t.category.name) || 0;
+        categorySpending.set(t.category.name, current + t.amount);
+      }
+    });
+
+    // Find top spending categories
+    const topCategories = Array.from(categorySpending.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+
+    if (topCategories.length > 0) {
+      advice.push(`Fokus pada pengurangan pengeluaran di kategori: ${topCategories.map(c => c[0]).join(', ')}`);
+    }
+
+    // Budget advice
+    if (budgets.length === 0) {
+      advice.push('Buat budget untuk kategori pengeluaran terbesar Anda');
+    } else {
+      const exceededBudgets = budgets.filter(b => b.spent > b.amount);
+      if (exceededBudgets.length > 0) {
+        advice.push(`Tinjau ${exceededBudgets.length} budget yang terlampaui`);
+      }
+    }
+
+    return advice;
   }
 
   // Get budget insights
-  async getBudgetInsights(userId: string) {
-    const transactions = await prisma.transaction.findMany({
-      where: { userId, type: 'expense' },
-      include: { category: true },
-      orderBy: { date: 'desc' },
-      take: 100
-    });
+  async getBudgetInsights(userId: string): Promise<any[]> {
+    try {
+      const budgets = await prisma.budget.findMany({
+        where: { userId },
+        include: {
+          category: true
+        }
+      });
 
-    if (transactions.length === 0) {
+      if (budgets.length === 0) {
+        return [{
+          type: 'info',
+          title: 'Belum Ada Budget',
+          description: 'Buat budget pertama Anda untuk mulai mengontrol pengeluaran'
+        }];
+      }
+
+      const insights: any[] = [];
+
+      // Check for exceeded budgets
+      const exceededBudgets = budgets.filter(b => b.spent > b.amount);
+      if (exceededBudgets.length > 0) {
+        insights.push({
+          type: 'warning',
+          title: 'Budget Terlampaui',
+          description: `${exceededBudgets.length} budget telah melebihi batas yang ditentukan`
+        });
+      }
+
+      // Check for near-limit budgets
+      const nearLimitBudgets = budgets.filter(b => {
+        const usagePercentage = (b.spent / b.amount) * 100;
+        return usagePercentage >= 80 && usagePercentage < 100;
+      });
+
+      if (nearLimitBudgets.length > 0) {
+        insights.push({
+          type: 'info',
+          title: 'Budget Mendekati Batas',
+          description: `${nearLimitBudgets.length} budget mendekati batas maksimal`
+        });
+      }
+
+      // Check for well-managed budgets
+      const wellManagedBudgets = budgets.filter(b => {
+        const usagePercentage = (b.spent / b.amount) * 100;
+        return usagePercentage <= 70;
+      });
+
+      if (wellManagedBudgets.length > 0) {
+        insights.push({
+          type: 'positive',
+          title: 'Budget Terkelola Baik',
+          description: `${wellManagedBudgets.length} budget masih dalam batas yang sehat`
+        });
+      }
+
+      // Overall budget health
+      const totalBudget = budgets.reduce((sum, b) => sum + b.amount, 0);
+      const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
+      const overallUsage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+
+      if (overallUsage > 100) {
+        insights.push({
+          type: 'negative',
+          title: 'Pengeluaran Melebihi Budget',
+          description: `Total pengeluaran melebihi ${(overallUsage - 100).toFixed(1)}% dari budget yang direncanakan`
+        });
+      } else if (overallUsage <= 80) {
+        insights.push({
+          type: 'positive',
+          title: 'Pengelolaan Budget Baik',
+          description: `Anda masih memiliki ${(100 - overallUsage).toFixed(1)}% dari budget yang tersisa`
+        });
+      }
+
+      return insights;
+
+    } catch (error) {
+      console.error('Error getting budget insights:', error);
+      return [{
+        type: 'error',
+        title: 'Error',
+        description: 'Gagal mengambil insight budget'
+      }];
+    }
+  }
+
+  // Chat with AI
+  async chatWithAI(userId: string, message: string): Promise<string> {
+    try {
+      // Get user context
+      const [transactions, goals, budgets] = await Promise.all([
+        prisma.transaction.findMany({
+          where: { userId },
+          include: { category: true }
+        }),
+        prisma.goal.findMany({
+          where: { userId }
+        }),
+        prisma.budget.findMany({
+          where: { userId }
+        })
+      ]);
+
+      // Calculate financial metrics
+      const income = transactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const expenses = transactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
+
+      // Create context for AI
+      const context = {
+        userId,
+        totalTransactions: transactions.length,
+        income,
+        expenses,
+        savingsRate,
+        goalsCount: goals.length,
+        budgetsCount: budgets.length,
+        recentTransactions: transactions.slice(-5)
+      };
+
+      // Generate AI response using Groq
+      const response = await groqService.generateChatResponse(message, context);
+      return response;
+
+    } catch (error) {
+      console.error('Error in chatWithAI:', error);
+      return 'Maaf, terjadi kesalahan dalam memproses pesan Anda. Silakan coba lagi.';
+    }
+  }
+
+  // Get dashboard insights
+  async getDashboardInsights(userId: string, monthsData: any[]): Promise<any> {
+    try {
+      const context = {
+        userId,
+        monthsData,
+        analysis: this.analyzeMonthsData(monthsData)
+      };
+
+      const prompt = `Berdasarkan data keuangan berikut, berikan insight yang berguna dalam bahasa Indonesia:
+
+Data Bulanan:
+${monthsData.map(m => `- ${m.month}: Pemasukan Rp${m.income.toLocaleString()}, Pengeluaran Rp${m.expense.toLocaleString()}, Tabungan Rp${m.savings.toLocaleString()}`).join('\n')}
+
+Analisis:
+- Total Pemasukan: Rp${context.analysis.totalIncome.toLocaleString()}
+- Total Pengeluaran: Rp${context.analysis.totalExpense.toLocaleString()}
+- Total Tabungan: Rp${context.analysis.totalSavings.toLocaleString()}
+- Rata-rata Tabungan: ${context.analysis.avgSavingsRate.toFixed(1)}%
+
+Berikan insight yang mencakup:
+1. Trend keuangan (meningkat/menurun/stabil)
+2. Kesehatan keuangan berdasarkan tingkat tabungan
+3. Rekomendasi untuk perbaikan (jika diperlukan)
+4. Pujian untuk pencapaian positif (jika ada)
+
+Format response dalam JSON:
+{
+  "message": "Pesan utama insight",
+  "insights": ["Insight 1", "Insight 2"],
+  "recommendations": [
+    {"title": "Judul", "description": "Deskripsi"}
+  ]
+}`;
+
+      const response = await groqService.generateChatResponse(prompt, context);
+      
+      try {
+        // Try to parse JSON response
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+      } catch (parseError) {
+        console.error('Error parsing JSON response:', parseError);
+      }
+
+      // Fallback to simple response
       return {
-        message: 'Belum ada data transaksi untuk dianalisis',
-        insights: []
+        message: response,
+        insights: [],
+        recommendations: []
+      };
+
+    } catch (error) {
+      console.error('Error getting dashboard insights:', error);
+      return {
+        message: 'Gagal mengambil insight AI',
+        insights: [],
+        recommendations: []
       };
     }
+  }
 
-    const insights = [];
-
-    // Analyze spending trends
-    const monthlyData = transactions.reduce((acc, transaction) => {
-      const month = transaction.date.toISOString().slice(0, 7);
-      if (!acc[month]) {
-        acc[month] = { total: 0, count: 0 };
-      }
-      acc[month].total += transaction.amount;
-      acc[month].count += 1;
-      return acc;
-    }, {} as Record<string, { total: number; count: number }>);
-
-    const monthlyTotals = Object.values(monthlyData).map(m => m.total);
-    if (monthlyTotals.length > 1) {
-      const avgMonthly = monthlyTotals.reduce((sum, val) => sum + val, 0) / monthlyTotals.length;
-      const latestMonth = monthlyTotals[monthlyTotals.length - 1];
-      
-      if (latestMonth > avgMonthly * 1.3) {
-        insights.push({
-          type: 'high_spending_alert',
-          title: 'Peringatan Pengeluaran Tinggi',
-          message: 'Pengeluaran bulan ini 30% lebih tinggi dari rata-rata. Pertimbangkan untuk mengatur budget yang lebih ketat.',
-          severity: 'high'
-        });
-      }
-    }
-
-    // Analyze category spending
-    const categoryTotals = transactions.reduce((acc, transaction) => {
-      const categoryName = transaction.category?.name || 'Lainnya';
-      acc[categoryName] = (acc[categoryName] || 0) + transaction.amount;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const totalSpending = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
-    const topCategory = Object.entries(categoryTotals)
-      .sort(([,a], [,b]) => b - a)[0];
-
-    if (topCategory) {
-      const [categoryName, amount] = topCategory;
-      const percentage = (amount / totalSpending) * 100;
-      
-      if (percentage > 50) {
-        insights.push({
-          type: 'category_concentration',
-          title: 'Konsentrasi Pengeluaran Tinggi',
-          message: `${categoryName} mengambil ${percentage.toFixed(1)}% dari total pengeluaran. Pertimbangkan untuk mendiversifikasi pengeluaran.`,
-          severity: 'medium'
-        });
-      }
-    }
+  private analyzeMonthsData(monthsData: any[]) {
+    const totalIncome = monthsData.reduce((sum, m) => sum + m.income, 0);
+    const totalExpense = monthsData.reduce((sum, m) => sum + m.expense, 0);
+    const totalSavings = monthsData.reduce((sum, m) => sum + m.savings, 0);
+    const avgSavingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
 
     return {
-      message: 'Insight budget berhasil dibuat',
-      insights
+      totalIncome,
+      totalExpense,
+      totalSavings,
+      avgSavingsRate
     };
   }
 }

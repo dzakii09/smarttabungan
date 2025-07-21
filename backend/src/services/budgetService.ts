@@ -442,6 +442,135 @@ class BudgetService {
       };
     }
   }
+
+  // Get budget recommendations based on transaction history
+  async getBudgetRecommendations(userId: string) {
+    try {
+      if (!userId) {
+        return [];
+      }
+
+      // Get categories that user has transactions for
+      const userCategories = await prisma.transaction.groupBy({
+        by: ['categoryId'],
+        where: {
+          userId,
+          type: 'expense',
+          categoryId: { not: null }
+        },
+        _count: {
+          categoryId: true
+        }
+      });
+
+      const categoryIds = userCategories.map(uc => uc.categoryId).filter(Boolean);
+      
+      const categories = await prisma.category.findMany({
+        where: {
+          id: { in: categoryIds },
+          type: 'expense'
+        }
+      });
+
+      const recommendations = [];
+
+      for (const category of categories) {
+        try {
+          // Get transactions for this category in the last 3 months
+          const threeMonthsAgo = new Date();
+          threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+          const transactions = await prisma.transaction.findMany({
+            where: {
+              userId,
+              categoryId: category.id,
+              type: 'expense',
+              date: {
+                gte: threeMonthsAgo
+              }
+            },
+            orderBy: {
+              date: 'desc'
+            }
+          });
+
+          if (transactions.length === 0) continue;
+
+          // Calculate average spending
+          const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
+          const averageAmount = totalAmount / 3; // 3 months
+          
+          // Calculate trend
+          const recentTransactions = transactions.slice(0, Math.min(10, transactions.length));
+          const olderTransactions = transactions.slice(-Math.min(10, transactions.length));
+          
+          const recentAverage = recentTransactions.reduce((sum, t) => sum + t.amount, 0) / recentTransactions.length;
+          const olderAverage = olderTransactions.reduce((sum, t) => sum + t.amount, 0) / olderTransactions.length;
+          
+          let trend: 'increasing' | 'decreasing' | 'stable' = 'stable';
+          if (recentAverage > olderAverage * 1.1) {
+            trend = 'increasing';
+          } else if (recentAverage < olderAverage * 0.9) {
+            trend = 'decreasing';
+          }
+
+          // Calculate confidence based on data consistency
+          const variance = transactions.reduce((sum, t) => {
+            const diff = t.amount - averageAmount;
+            return sum + (diff * diff);
+          }, 0) / transactions.length;
+          
+          const standardDeviation = Math.sqrt(variance);
+          const coefficientOfVariation = standardDeviation / averageAmount;
+          const confidence = Math.max(50, Math.min(95, 100 - (coefficientOfVariation * 100)));
+
+          // Generate recommendation amount with buffer
+          let recommendedAmount = averageAmount;
+          if (trend === 'increasing') {
+            recommendedAmount *= 1.15; // 15% buffer for increasing trend
+          } else if (trend === 'decreasing') {
+            recommendedAmount *= 1.05; // 5% buffer for decreasing trend
+          } else {
+            recommendedAmount *= 1.1; // 10% buffer for stable trend
+          }
+
+          // Generate reason
+          let reason = '';
+          if (transactions.length < 5) {
+            reason = `Berdasarkan ${transactions.length} transaksi terbaru`;
+          } else {
+            reason = `Berdasarkan rata-rata pengeluaran ${transactions.length} transaksi dalam 3 bulan terakhir`;
+          }
+
+          if (trend === 'increasing') {
+            reason += ' (tren meningkat)';
+          } else if (trend === 'decreasing') {
+            reason += ' (tren menurun)';
+          }
+
+          recommendations.push({
+            categoryId: category.id,
+            categoryName: category.name,
+            recommendedAmount: Math.round(recommendedAmount),
+            reason,
+            confidence: Math.round(confidence),
+            historicalAverage: Math.round(averageAmount),
+            trend
+          });
+        } catch (error) {
+          console.error(`Error processing recommendations for category ${category.id}:`, error);
+        }
+      }
+
+      // Sort by confidence and return top 6
+      return recommendations
+        .sort((a, b) => b.confidence - a.confidence)
+        .slice(0, 6);
+    } catch (error) {
+      console.error('Error getting budget recommendations:', error);
+      return [];
+    }
+  }
 }
 
 export default new BudgetService(); 

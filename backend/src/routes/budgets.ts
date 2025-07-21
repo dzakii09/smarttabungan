@@ -8,6 +8,7 @@ const router = express.Router();
 router.get('/alerts', auth as any, budgetController.getBudgetAlerts as any);
 router.get('/stats', auth as any, budgetController.getBudgetStats as any);
 router.get('/insights', auth as any, budgetController.getBudgetInsights as any);
+router.get('/recommendations', auth as any, budgetController.getBudgetRecommendations as any);
 
 // Budget CRUD operations
 router.post('/', auth as any, budgetController.createBudget as any);

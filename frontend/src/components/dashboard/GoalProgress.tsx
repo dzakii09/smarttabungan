@@ -44,7 +44,10 @@ const GoalProgress: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-neutral-800">
+                  <p className={`text-sm font-medium ${
+                    progress >= 100 ? 'text-green-600' :
+                    progress >= 80 ? 'text-blue-600' : 'text-neutral-800'
+                  }`}>
                     {progress.toFixed(0)}%
                   </p>
                 </div>
@@ -52,7 +55,10 @@ const GoalProgress: React.FC = () => {
               
               <div className="w-full bg-neutral-100 rounded-full h-2">
                 <div 
-                  className={`h-2 rounded-full transition-all duration-500 bg-primary-500`}
+                  className={`h-2 rounded-full transition-all duration-500 ${
+                    progress >= 100 ? 'bg-green-500' :
+                    progress >= 80 ? 'bg-blue-500' : 'bg-primary-500'
+                  }`}
                   style={{ width: `${Math.min(progress, 100)}%` }}
                 ></div>
               </div>

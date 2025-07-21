@@ -246,6 +246,25 @@ class BudgetController {
       });
     }
   }
+
+  // Get budget recommendations
+  async getBudgetRecommendations(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?.id;
+      const recommendations = await budgetService.getBudgetRecommendations(userId);
+
+      res.json({
+        success: true,
+        data: recommendations
+      });
+    } catch (error: any) {
+      console.error('Get budget recommendations error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Server error'
+      });
+    }
+  }
 }
 
 export default new BudgetController(); 

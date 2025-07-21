@@ -1,6 +1,6 @@
 import api from '../api'
 
-export interface GroupBudget {
+export interface TabunganBersama {
   id: string
   name: string
   description?: string
@@ -25,12 +25,12 @@ export interface GroupBudget {
     name: string
     type: string
   }
-  members: GroupBudgetMember[]
-  invitations: GroupBudgetInvitation[]
-  periods?: GroupBudgetPeriod[]
+  members: TabunganBersamaMember[]
+  invitations: TabunganBersamaInvitation[]
+  periods?: TabunganBersamaPeriod[]
 }
 
-export interface GroupBudgetPeriod {
+export interface TabunganBersamaPeriod {
   id: string
   periodNumber: number
   startDate: string
@@ -40,11 +40,11 @@ export interface GroupBudgetPeriod {
   isActive: boolean
   createdAt: string
   updatedAt: string
-  groupBudgetId: string
-  transactions: GroupBudgetTransaction[]
+  tabunganBersamaId: string
+  transactions: TabunganBersamaTransaction[]
 }
 
-export interface GroupBudgetTransaction {
+export interface TabunganBersamaTransaction {
   id: string
   amount: number
   description: string
@@ -52,7 +52,7 @@ export interface GroupBudgetTransaction {
   date: string
   createdAt: string
   updatedAt: string
-  groupBudgetId: string
+  tabunganBersamaId: string
   periodId: string
   createdBy: string
   creator: {
@@ -62,7 +62,7 @@ export interface GroupBudgetTransaction {
   }
 }
 
-export interface GroupBudgetMember {
+export interface TabunganBersamaMember {
   id: string
   role: 'owner' | 'admin' | 'member'
   joinedAt: string
@@ -73,13 +73,13 @@ export interface GroupBudgetMember {
   }
 }
 
-export interface GroupBudgetInvitation {
+export interface TabunganBersamaInvitation {
   id: string
   email: string
   status: 'pending' | 'accepted' | 'declined'
   invitedAt: string
   respondedAt?: string
-  groupBudget: {
+  tabunganBersama: {
     id: string
     name: string
     creator: {
@@ -97,7 +97,7 @@ export interface GroupBudgetInvitation {
   }
 }
 
-export interface CreateGroupBudgetData {
+export interface CreateTabunganBersamaData {
   name: string
   description?: string
   amount: number
@@ -109,8 +109,8 @@ export interface CreateGroupBudgetData {
   invitedEmails?: string[]
 }
 
-export interface AddGroupBudgetTransactionData {
-  groupBudgetId: string
+export interface AddTabunganBersamaTransactionData {
+  tabunganBersamaId: string
   periodId: string
   amount: number
   description: string
@@ -118,7 +118,7 @@ export interface AddGroupBudgetTransactionData {
   date: string
 }
 
-export interface UpdateGroupBudgetData {
+export interface UpdateTabunganBersamaData {
   name?: string
   description?: string
   amount?: number
@@ -137,54 +137,54 @@ export interface User {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-class GroupBudgetService {
+class TabunganBersamaService {
   // Create group budget
-  async createGroupBudget(data: CreateGroupBudgetData): Promise<GroupBudget> {
+  async createTabunganBersama(data: CreateTabunganBersamaData): Promise<TabunganBersama> {
     const response = await api.post('/group-budgets', data)
     return (response.data as any).groupBudget
   }
 
   // Get all group budgets
-  async getGroupBudgets(): Promise<GroupBudget[]> {
+  async getTabunganBersamas(): Promise<TabunganBersama[]> {
     const response = await api.get('/group-budgets')
-    return response.data as GroupBudget[]
+    return response.data as TabunganBersama[]
   }
 
   // Get group budget by ID
-  async getGroupBudgetById(id: string): Promise<GroupBudget> {
+  async getTabunganBersamaById(id: string): Promise<TabunganBersama> {
     const response = await api.get(`/group-budgets/${id}`)
-    return response.data as GroupBudget
+    return response.data as TabunganBersama
   }
 
   // Update group budget
-  async updateGroupBudget(id: string, data: UpdateGroupBudgetData): Promise<GroupBudget> {
+  async updateTabunganBersama(id: string, data: UpdateTabunganBersamaData): Promise<TabunganBersama> {
     const response = await api.put(`/group-budgets/${id}`, data)
     return (response.data as any).groupBudget
   }
 
   // Delete group budget
-  async deleteGroupBudget(id: string): Promise<void> {
+  async deleteTabunganBersama(id: string): Promise<void> {
     await api.delete(`/group-budgets/${id}`)
   }
 
   // Get group budget periods
-  async getGroupBudgetPeriods(groupBudgetId: string): Promise<GroupBudgetPeriod[]> {
-    const response = await api.get(`/group-budgets/${groupBudgetId}/periods`)
-    return response.data as GroupBudgetPeriod[]
+  async getTabunganBersamaPeriods(tabunganBersamaId: string): Promise<TabunganBersamaPeriod[]> {
+    const response = await api.get(`/group-budgets/${tabunganBersamaId}/periods`)
+    return response.data as TabunganBersamaPeriod[]
   }
 
   // Get group budget period by ID
-  async getGroupBudgetPeriodById(periodId: string): Promise<GroupBudgetPeriod> {
+  async getTabunganBersamaPeriodById(periodId: string): Promise<TabunganBersamaPeriod> {
     const response = await api.get(`/group-budgets/periods/${periodId}`)
-    return response.data as GroupBudgetPeriod
+    return response.data as TabunganBersamaPeriod
   }
 
   // Add transaction to group budget period
-  async addGroupBudgetTransaction(data: AddGroupBudgetTransactionData): Promise<any> {
+  async addTabunganBersamaTransaction(data: AddTabunganBersamaTransactionData): Promise<any> {
     const token = localStorage.getItem('token')
     if (!token) throw new Error('No token found')
 
-    const response = await fetch(`${API_BASE_URL}/group-budgets/${data.groupBudgetId}/transactions`, {
+    const response = await fetch(`${API_BASE_URL}/group-budgets/${data.tabunganBersamaId}/transactions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -209,8 +209,8 @@ class GroupBudgetService {
   }
 
   // Invite user to group budget
-  async inviteUser(groupBudgetId: string, email: string): Promise<any> {
-    const response = await api.post(`/group-budgets/${groupBudgetId}/invite`, { email })
+  async inviteUser(tabunganBersamaId: string, email: string): Promise<any> {
+    const response = await api.post(`/group-budgets/${tabunganBersamaId}/invite`, { email })
     return response.data
   }
 
@@ -225,9 +225,9 @@ class GroupBudgetService {
   }
 
   // Get user invitations
-  async getUserInvitations(): Promise<GroupBudgetInvitation[]> {
+  async getUserInvitations(): Promise<TabunganBersamaInvitation[]> {
     const response = await api.get('/group-budgets/invitations/user')
-    return response.data as GroupBudgetInvitation[]
+    return response.data as TabunganBersamaInvitation[]
   }
 
   // Get period confirmations (status konfirmasi semua member pada periode)
@@ -254,4 +254,4 @@ class GroupBudgetService {
   }
 }
 
-export default new GroupBudgetService() 
+export default new TabunganBersamaService() 

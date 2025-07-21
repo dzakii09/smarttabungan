@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, TrendingUp, AlertTriangle, CheckCircle, Target, Calendar, DollarSign, PieChart, Lightbulb, BarChart3 } from 'lucide-react';
 import api from '../api';
 import { useApp } from '../contexts/AppContext';
 import { toast } from 'sonner';
@@ -20,6 +20,9 @@ interface Budget {
     color: string;
   };
   status: 'on-track' | 'warning' | 'exceeded';
+  name?: string;
+  description?: string;
+  alertThreshold?: number;
 }
 
 interface BudgetRecommendation {
@@ -27,6 +30,9 @@ interface BudgetRecommendation {
   categoryName: string;
   recommendedAmount: number;
   reason: string;
+  confidence: number;
+  historicalAverage: number;
+  trend: 'increasing' | 'decreasing' | 'stable';
 }
 
 interface BudgetStats {
@@ -38,30 +44,54 @@ interface BudgetStats {
   exceededBudgets: number;
   warningBudgets: number;
   onTrackBudgets: number;
+  categoryBreakdown: {
+    categoryId: string;
+    categoryName: string;
+    budgetAmount: number;
+    spentAmount: number;
+    remainingAmount: number;
+    progress: number;
+  }[];
+}
+
+interface BudgetInsight {
+  type: 'warning' | 'success' | 'info';
+  message: string;
+  action?: string;
+  icon: string;
 }
 
 const Budgets: React.FC = () => {
   const token = localStorage.getItem('token');
-  const { /* context lainnya */ } = useApp();
+  const { categories, transactions } = useApp();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [stats, setStats] = useState<BudgetStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showRecommendations, setShowRecommendations] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
   const [editMode, setEditMode] = useState(false);
+  const [recommendations, setRecommendations] = useState<BudgetRecommendation[]>([]);
+  const [insights, setInsights] = useState<BudgetInsight[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'chart' | 'insights'>('list');
 
   // Form state
   const [formData, setFormData] = useState({
+    name: '',
     amount: '',
     period: 'monthly',
     startDate: '',
-    categoryId: ''
+    categoryId: '',
+    description: '',
+    alertThreshold: '80'
   });
 
   useEffect(() => {
     if (token) {
       fetchBudgets();
       fetchStats();
+      fetchRecommendations();
+      generateInsights();
     }
   }, [token]);
 
@@ -75,7 +105,7 @@ const Budgets: React.FC = () => {
     } catch (error) {
       console.error('Error fetching budgets:', error);
       toast.error('Gagal memuat data budget');
-      setBudgets([]); // Set empty array on error
+      setBudgets([]);
     }
   };
 
@@ -89,7 +119,6 @@ const Budgets: React.FC = () => {
     } catch (error) {
       console.error('Error fetching stats:', error);
       toast.error('Gagal memuat statistik budget');
-      // Set default stats on error
       setStats({
         totalBudget: 0,
         totalSpent: 0,
@@ -98,11 +127,107 @@ const Budgets: React.FC = () => {
         activeBudgets: 0,
         exceededBudgets: 0,
         warningBudgets: 0,
-        onTrackBudgets: 0
+        onTrackBudgets: 0,
+        categoryBreakdown: []
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchRecommendations = async () => {
+    try {
+      const response = await api.get('/budgets/recommendations', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = (response.data as any).data || response.data;
+      setRecommendations(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      // Generate local recommendations based on transaction history
+      generateLocalRecommendations();
+    }
+  };
+
+  const generateLocalRecommendations = () => {
+    const categoryTotals = new Map<string, number>();
+    const categoryCounts = new Map<string, number>();
+    
+    // Calculate average spending per category
+    transactions.forEach(transaction => {
+      if (transaction.type === 'expense' && transaction.categoryId) {
+        const currentTotal = categoryTotals.get(transaction.categoryId) || 0;
+        const currentCount = categoryCounts.get(transaction.categoryId) || 0;
+        categoryTotals.set(transaction.categoryId, currentTotal + transaction.amount);
+        categoryCounts.set(transaction.categoryId, currentCount + 1);
+      }
+    });
+
+    const localRecommendations: BudgetRecommendation[] = [];
+    
+    categoryTotals.forEach((total, categoryId) => {
+      const count = categoryCounts.get(categoryId) || 1;
+      const average = total / count;
+      const category = categories.find(cat => cat.id === categoryId);
+      
+      if (category) {
+        localRecommendations.push({
+          categoryId,
+          categoryName: category.name,
+          recommendedAmount: Math.round(average * 1.2), // 20% buffer
+          reason: `Berdasarkan rata-rata pengeluaran ${count} transaksi`,
+          confidence: Math.min(85, 50 + count * 5), // Higher confidence with more data
+          historicalAverage: average,
+          trend: 'stable'
+        });
+      }
+    });
+
+    setRecommendations(localRecommendations.slice(0, 6));
+  };
+
+  const generateInsights = () => {
+    const newInsights: BudgetInsight[] = [];
+    
+    if (budgets.length === 0) {
+      newInsights.push({
+        type: 'info',
+        message: 'Belum ada budget yang dibuat. Mulai dengan membuat budget untuk kategori pengeluaran utama.',
+        action: 'Buat Budget Pertama',
+        icon: '🎯'
+      });
+    }
+
+    if (stats) {
+      if (stats.exceededBudgets > 0) {
+        newInsights.push({
+          type: 'warning',
+          message: `${stats.exceededBudgets} budget telah terlampaui. Periksa pengeluaran Anda.`,
+          action: 'Lihat Detail',
+          icon: '⚠️'
+        });
+      }
+
+      if (stats.overallProgress > 80) {
+        newInsights.push({
+          type: 'warning',
+          message: 'Total pengeluaran sudah mencapai 80% dari budget. Hati-hati dengan pengeluaran selanjutnya.',
+          action: 'Review Budget',
+          icon: '📊'
+        });
+      }
+
+      if (stats.onTrackBudgets > stats.activeBudgets * 0.7) {
+        newInsights.push({
+          type: 'success',
+          message: 'Bagus! Sebagian besar budget Anda masih on track.',
+          action: 'Lihat Progress',
+          icon: '✅'
+        });
+      }
+    }
+
+    setInsights(newInsights);
   };
 
   const handleCreateBudget = async (e: React.FormEvent) => {
@@ -115,9 +240,18 @@ const Budgets: React.FC = () => {
       if ((response.data as any).success) {
         toast.success('Budget berhasil dibuat');
         setShowCreateModal(false);
-        setFormData({ amount: '', period: 'monthly', startDate: '', categoryId: '' });
+        setFormData({ 
+          name: '', 
+          amount: '', 
+          period: 'monthly', 
+          startDate: '', 
+          categoryId: '', 
+          description: '', 
+          alertThreshold: '80' 
+        });
         await fetchBudgets();
         await fetchStats();
+        generateInsights();
       } else {
         toast.error((response.data as any).message || 'Gagal membuat budget');
       }
@@ -138,6 +272,7 @@ const Budgets: React.FC = () => {
         toast.success('Status budget berhasil diubah');
         await fetchBudgets();
         await fetchStats();
+        generateInsights();
       } else {
         toast.error((response.data as any).message || 'Gagal mengubah status budget');
       }
@@ -159,6 +294,7 @@ const Budgets: React.FC = () => {
           toast.success('Budget berhasil dihapus');
           await fetchBudgets();
           await fetchStats();
+          generateInsights();
         } else {
           toast.error((response.data as any).message || 'Gagal menghapus budget');
         }
@@ -203,6 +339,16 @@ const Budgets: React.FC = () => {
     }).format(amount);
   };
 
+  const getCategoryColor = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category?.color || '#6B7280';
+  };
+
+  const getCategoryName = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    return category?.name || 'Kategori Tidak Diketahui';
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -214,8 +360,18 @@ const Budgets: React.FC = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Budget Management</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Manajemen Budget</h1>
+          <p className="text-gray-600 mt-1">Kelola anggaran pengeluaran Anda dengan bijak</p>
+        </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowRecommendations(true)}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+          >
+            <Lightbulb className="w-4 h-4" />
+            Rekomendasi
+          </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
@@ -226,107 +382,258 @@ const Budgets: React.FC = () => {
         </div>
       </div>
 
+      {/* View Mode Toggle */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setViewMode('list')}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+            viewMode === 'list' 
+              ? 'bg-blue-100 text-blue-700' 
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <Eye className="w-4 h-4" />
+          Daftar
+        </button>
+        <button
+          onClick={() => setViewMode('chart')}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+            viewMode === 'chart' 
+              ? 'bg-blue-100 text-blue-700' 
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          Chart
+        </button>
+        <button
+          onClick={() => setViewMode('insights')}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+            viewMode === 'insights' 
+              ? 'bg-blue-100 text-blue-700' 
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4" />
+          Insights
+        </button>
+      </div>
+
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Total Budget</h3>
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className="w-5 h-5 text-blue-600" />
+              <h3 className="text-sm font-medium text-gray-500">Total Budget</h3>
+            </div>
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalBudget)}</p>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Total Spent</h3>
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-5 h-5 text-red-600" />
+              <h3 className="text-sm font-medium text-gray-500">Total Spent</h3>
+            </div>
             <p className="text-2xl font-bold text-red-600">{formatCurrency(stats.totalSpent)}</p>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Remaining</h3>
+            <div className="flex items-center gap-2 mb-2">
+              <Target className="w-5 h-5 text-green-600" />
+              <h3 className="text-sm font-medium text-gray-500">Remaining</h3>
+            </div>
             <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalRemaining)}</p>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-sm font-medium text-gray-500">Progress</h3>
-            <p className="text-2xl font-bold text-blue-600">{stats.overallProgress.toFixed(1)}%</p>
+            <div className="flex items-center gap-2 mb-2">
+              <PieChart className={`w-5 h-5 ${
+                stats.overallProgress >= 100 ? 'text-red-600' :
+                stats.overallProgress >= 80 ? 'text-yellow-600' : 'text-purple-600'
+              }`} />
+              <h3 className="text-sm font-medium text-gray-500">Progress</h3>
+            </div>
+            <p className={`text-2xl font-bold ${
+              stats.overallProgress >= 100 ? 'text-red-600' :
+              stats.overallProgress >= 80 ? 'text-yellow-600' : 'text-purple-600'
+            }`}>
+              {stats.overallProgress.toFixed(1)}%
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Insights Section */}
+      {viewMode === 'insights' && insights.length > 0 && (
+        <div className="bg-white rounded-lg shadow mb-6">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Lightbulb className="w-5 h-5 text-yellow-500" />
+              Budget Insights
+            </h2>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {insights.map((insight, index) => (
+                <div key={index} className={`p-4 rounded-lg border ${
+                  insight.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
+                  insight.type === 'success' ? 'bg-green-50 border-green-200' :
+                  'bg-blue-50 border-blue-200'
+                }`}>
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">{insight.icon}</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900 mb-1">{insight.message}</p>
+                      {insight.action && (
+                        <button className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                          {insight.action} →
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
       {/* Budget List */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Daftar Budget</h2>
-        </div>
-        <div className="divide-y divide-gray-200">
-          {budgets.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">
-              Belum ada budget yang dibuat. Mulai dengan membuat budget baru.
-            </div>
-          ) : (
-            budgets.map((budget) => (
-              <div key={budget.id} className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    {getStatusIcon(budget.status)}
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {budget.category?.name || 'Total Budget'}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        {budget.period} • {new Date(budget.startDate).toLocaleDateString('id-ID')} - {new Date(budget.endDate).toLocaleDateString('id-ID')}
-                      </p>
+      {viewMode === 'list' && (
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Daftar Budget</h2>
+          </div>
+          <div className="divide-y divide-gray-200">
+            {budgets.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">
+                <Target className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-lg font-medium mb-2">Belum ada budget yang dibuat</p>
+                <p className="text-sm mb-4">Mulai dengan membuat budget untuk kategori pengeluaran utama Anda</p>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Buat Budget Pertama
+                </button>
+              </div>
+            ) : (
+              budgets.map((budget) => (
+                <div key={budget.id} className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      {getStatusIcon(budget.status)}
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {budget.name || budget.category?.name || 'Total Budget'}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {budget.category?.name && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mr-2" 
+                                  style={{ backgroundColor: `${budget.category.color}20`, color: budget.category.color }}>
+                              {budget.category.name}
+                            </span>
+                          )}
+                          {budget.period} • {new Date(budget.startDate).toLocaleDateString('id-ID')} - {new Date(budget.endDate).toLocaleDateString('id-ID')}
+                        </p>
+                        {budget.description && (
+                          <p className="text-sm text-gray-600 mt-1">{budget.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(budget.status)}`}>
+                        {budget.status === 'exceeded' ? 'Terlampaui' : 
+                         budget.status === 'warning' ? 'Peringatan' : 'On Track'}
+                      </span>
+                      <button
+                        onClick={() => handleToggleStatus(budget.id)}
+                        className={`px-3 py-1 rounded text-sm ${budget.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
+                      >
+                        {budget.isActive ? 'Aktif' : 'Nonaktif'}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteBudget(budget.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(budget.status)}`}>
-                      {budget.status === 'exceeded' ? 'Terlampaui' : 
-                       budget.status === 'warning' ? 'Peringatan' : 'On Track'}
-                    </span>
-                    <button
-                      onClick={() => handleToggleStatus(budget.id)}
-                      className={`px-3 py-1 rounded text-sm ${budget.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
-                    >
-                      {budget.isActive ? 'Aktif' : 'Nonaktif'}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteBudget(budget.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="mt-4">
-                  <div className="flex justify-between text-sm text-gray-600 mb-2">
-                    <span>Progress: {budget.progress.toFixed(1)}%</span>
-                    <span>{formatCurrency(budget.spent)} / {formatCurrency(budget.amount)}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  
+                  <div className="mt-4">
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>Progress: <span className={`font-medium ${
+                        budget.progress >= 100 ? 'text-red-600' :
+                        budget.progress >= 80 ? 'text-yellow-600' : 'text-gray-600'
+                      }`}>{budget.progress.toFixed(1)}%</span></span>
+                      <span>{formatCurrency(budget.spent)} / {formatCurrency(budget.amount)}</span>
+                    </div>
+                                      <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${
-                        budget.progress >= 100 ? 'bg-red-500' :
+                        budget.progress >= 100 ? 'bg-red-600' :
                         budget.progress >= 80 ? 'bg-yellow-500' : 'bg-green-500'
                       }`}
                       style={{ width: `${Math.min(budget.progress, 100)}%` }}
                     ></div>
                   </div>
-                  <div className="mt-2 text-sm text-gray-500">
+                                      <div className="mt-2 text-sm text-gray-500">
                     Sisa: {formatCurrency(budget.remaining)}
+                    {budget.progress >= 100 && (
+                      <span className="ml-2 text-red-600 font-medium">
+                        ⚠️ Budget terlampaui!
+                      </span>
+                    )}
+                  </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Create Budget Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Buat Budget Baru</h2>
             <form onSubmit={handleCreateBudget}>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Jumlah Budget
+                    Nama Budget (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Contoh: Budget Makanan Bulan Ini"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Kategori <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.categoryId}
+                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Pilih Kategori</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Jumlah Budget <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -337,23 +644,26 @@ const Budgets: React.FC = () => {
                     required
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Periode
+                    Periode <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.period}
                     onChange={(e) => setFormData({ ...formData, period: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
                   >
                     <option value="weekly">Mingguan</option>
                     <option value="monthly">Bulanan</option>
                     <option value="yearly">Tahunan</option>
                   </select>
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tanggal Mulai
+                    Tanggal Mulai <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
@@ -362,6 +672,37 @@ const Budgets: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Deskripsi (Opsional)
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Tambahkan catatan tentang budget ini"
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Threshold Peringatan (%)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.alertThreshold}
+                    onChange={(e) => setFormData({ ...formData, alertThreshold: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="80"
+                    min="50"
+                    max="100"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Anda akan mendapat peringatan ketika budget mencapai persentase ini
+                  </p>
                 </div>
               </div>
               <div className="flex gap-2 mt-6">
@@ -380,6 +721,71 @@ const Budgets: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Recommendations Modal */}
+      {showRecommendations && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Rekomendasi Budget</h2>
+              <button
+                onClick={() => setShowRecommendations(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {recommendations.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Lightbulb className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <p>Belum ada rekomendasi yang tersedia</p>
+                </div>
+              ) : (
+                recommendations.map((rec, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-medium text-gray-900">{rec.categoryName}</h3>
+                        <p className="text-sm text-gray-600">{rec.reason}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-blue-600">
+                          {formatCurrency(rec.recommendedAmount)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Confidence: {rec.confidence}%
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div className="text-sm text-gray-600">
+                        Rata-rata historis: {formatCurrency(rec.historicalAverage)}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            categoryId: rec.categoryId,
+                            amount: rec.recommendedAmount.toString(),
+                            name: `Budget ${rec.categoryName}`
+                          });
+                          setShowRecommendations(false);
+                          setShowCreateModal(true);
+                        }}
+                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                      >
+                        Gunakan Rekomendasi
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -9,6 +9,8 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { isAuthenticated } = useApp();
+  
+  console.log('🔍 Debug: Layout rendering, isAuthenticated:', isAuthenticated);
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -20,7 +22,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <main className={`flex-1 overflow-auto ${
           isAuthenticated ? 'lg:ml-64' : ''
         }`}>
-          <div className="p-4 sm:p-6 lg:p-8">
+          <div className="p-4 sm:p-6 lg:p-8 min-h-full">
             {children}
           </div>
         </main>

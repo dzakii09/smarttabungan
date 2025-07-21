@@ -1,14 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import api from '../api';
 import { toast } from 'sonner';
-import { Upload, Download, Plus } from 'lucide-react';
+import { Upload, Download, Plus, AlertTriangle } from 'lucide-react';
 import ImportModal from '../components/import/ImportModal';
 import ExportModal from '../components/export/ExportModal';
 import CustomCategoryModal from '../components/categories/CustomCategoryModal';
 
+interface Budget {
+  id: string;
+  amount: number;
+  spent: number;
+  remaining: number;
+  progress: number;
+  period: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  category?: {
+    id: string;
+    name: string;
+    color: string;
+  };
+  status: 'on-track' | 'warning' | 'exceeded';
+}
+
 const Transactions: React.FC = () => {
   const { transactions, fetchTransactions, categories, fetchCategories, fetchDashboardData } = useApp();
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   
   // Debug: log categories
   console.log('Categories in Transactions:', categories);
@@ -30,6 +49,54 @@ const Transactions: React.FC = () => {
   // Get token from localStorage
   const getToken = () => {
     return localStorage.getItem('token');
+  };
+
+  // Fetch budgets for budget checking
+  const fetchBudgets = async () => {
+    try {
+      const token = getToken();
+      if (!token) return;
+
+      const response = await api.get('/budgets', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = (response.data as any).data || response.data;
+      setBudgets(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching budgets:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchBudgets();
+  }, []);
+
+  // Check if transaction will exceed budget
+  const checkBudgetExceeded = (amount: number, categoryId: string) => {
+    if (!categoryId) return null;
+
+    const activeBudget = budgets.find(budget => 
+      budget.isActive && 
+      budget.category?.id === categoryId &&
+      new Date() >= new Date(budget.startDate) &&
+      new Date() <= new Date(budget.endDate)
+    );
+
+    if (!activeBudget) return null;
+
+    const newSpent = activeBudget.spent + amount;
+    const newProgress = (newSpent / activeBudget.amount) * 100;
+
+    if (newProgress > 100) {
+      return {
+        budget: activeBudget,
+        newSpent,
+        newProgress,
+        exceeded: newSpent - activeBudget.amount
+      };
+    }
+
+    return null;
   };
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -105,6 +172,7 @@ const Transactions: React.FC = () => {
       });
       await fetchTransactions();
       await fetchDashboardData(); // Refresh dashboard stats
+      await fetchBudgets(); // Refresh budgets
       toast.success('Transaksi berhasil dihapus');
     } catch (err: any) {
       setError('Gagal menghapus transaksi');
@@ -117,6 +185,7 @@ const Transactions: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    
     try {
       const token = getToken();
       const transactionData = {
@@ -124,6 +193,36 @@ const Transactions: React.FC = () => {
         amount: parseFloat(form.amount),
         categoryId: form.type === 'income' ? undefined : form.categoryId
       };
+
+      // Check budget before saving
+      if (form.type === 'expense' && form.categoryId) {
+        const budgetCheck = checkBudgetExceeded(parseFloat(form.amount), form.categoryId);
+        
+        if (budgetCheck) {
+          const exceededAmount = budgetCheck.exceeded;
+          const budgetName = budgetCheck.budget.category?.name || 'Budget';
+          
+          // Show warning toast
+          toast.error(
+            `⚠️ Transaksi ini akan melebihi budget ${budgetName}!`, 
+            {
+              description: `Budget akan terlampaui sebesar ${exceededAmount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}`,
+              duration: 5000,
+              icon: <AlertTriangle className="w-5 h-5" />
+            }
+          );
+          
+          // Ask for confirmation
+          const confirmed = window.confirm(
+            `Transaksi ini akan melebihi budget ${budgetName} sebesar ${exceededAmount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}.\n\nApakah Anda yakin ingin melanjutkan?`
+          );
+          
+          if (!confirmed) {
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
 
       if (form.id) {
         await api.put(`/transactions/${form.id}`, transactionData, {
@@ -135,11 +234,31 @@ const Transactions: React.FC = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success('Transaksi berhasil ditambahkan');
+        
+        // Show budget exceeded notification after successful save
+        if (form.type === 'expense' && form.categoryId) {
+          const budgetCheck = checkBudgetExceeded(parseFloat(form.amount), form.categoryId);
+          if (budgetCheck) {
+            const exceededAmount = budgetCheck.exceeded;
+            const budgetName = budgetCheck.budget.category?.name || 'Budget';
+            
+            toast.error(
+              `🚨 Budget ${budgetName} telah terlampaui!`, 
+              {
+                description: `Melebihi sebesar ${exceededAmount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}`,
+                duration: 8000,
+                icon: <AlertTriangle className="w-5 h-5" />
+              }
+            );
+          }
+        }
       }
+      
       setShowForm(false);
       setForm({ id: '', amount: '', type: 'expense', categoryId: '', date: '', description: '' });
       await fetchTransactions();
       await fetchDashboardData(); // Refresh dashboard stats
+      await fetchBudgets(); // Refresh budgets
     } catch (err: any) {
       console.error('Error saving transaction:', err);
       setError('Gagal menyimpan transaksi');

@@ -117,8 +117,11 @@ const GroupBudgets: React.FC = () => {
     console.log('🔍 Debug: Token exists:', !!token);
     console.log('🔍 Debug: Form data:', formData);
     
+    // Set default category if not selected
+    let finalFormData = { ...formData };
+    
     try {
-      const newGroupBudget = await groupBudgetService.createGroupBudget(formData)
+      const newGroupBudget = await groupBudgetService.createGroupBudget(finalFormData)
       setGroupBudgets([newGroupBudget, ...groupBudgets])
       setShowCreateModal(false)
       setFormData({
@@ -220,6 +223,8 @@ const GroupBudgets: React.FC = () => {
     return totalNeeded === 0 ? 0 : (totalConfirm / totalNeeded) * 100
   }
 
+  // HAPUS useEffect default category
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -232,7 +237,7 @@ const GroupBudgets: React.FC = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Group Budgets</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Tabungan Bersama</h1>
           <p className="text-gray-600">Manage shared budgets with other users</p>
         </div>
         <div className="flex gap-2">
@@ -277,7 +282,7 @@ const GroupBudgets: React.FC = () => {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => navigate(`/group-budgets/${budget.id}`)}
+                    onClick={() => navigate(`/tabungan-bersama/${budget.id}`)}
                     className="text-blue-600 hover:text-blue-700"
                     title="View Details"
                   >
@@ -330,7 +335,10 @@ const GroupBudgets: React.FC = () => {
                 <div className="mt-4">
                   <div className="flex justify-between text-sm text-gray-600 mb-1">
                     <span>Progress Konfirmasi</span>
-                    <span>{getConfirmationProgress(budget).toFixed(1)}%</span>
+                    <span className={`font-medium ${
+                      getConfirmationProgress(budget) >= 100 ? 'text-green-600' :
+                      getConfirmationProgress(budget) >= 80 ? 'text-blue-600' : 'text-gray-600'
+                    }`}>{getConfirmationProgress(budget).toFixed(1)}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
@@ -488,19 +496,20 @@ const GroupBudgets: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
                 <select
                   value={formData.categoryId}
                   onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select Category</option>
-                  {categories.map((category) => (
+                  <option value="">Tanpa Kategori</option>
+                  {categories.filter(cat => cat.type === 'expense').map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
                   ))}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">* Jika tidak dipilih, akan menggunakan kategori "Lainnya"</p>
               </div>
 
               <div className="flex gap-3 pt-4">

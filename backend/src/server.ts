@@ -8,6 +8,7 @@ import categoryRoutes from './routes/categories'
 import budgetRoutes from './routes/budgets'
 import importExportRoutes from './routes/import'
 import aiRoutes from './routes/ai'
+
 import notificationRoutes from './routes/notifications'
 import scheduledNotificationRoutes from './routes/scheduledNotifications'
 import exportRoutes from './routes/export'
@@ -17,6 +18,7 @@ import externalAPIRoutes from './routes/externalAPI'
 import groupBudgetRoutes from './routes/groupBudgets'
 import settingsRoutes from './routes/settings'
 import chatbotRoutes from './routes/chatbot';
+import analyticsRoutes from './routes/analytics';
 
 dotenv.config()
 
@@ -37,6 +39,7 @@ app.use('/api/categories', categoryRoutes)
 app.use('/api/budgets', budgetRoutes)
 app.use('/api/import-export', importExportRoutes)
 app.use('/api/ai', aiRoutes)
+
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/scheduled-notifications', scheduledNotificationRoutes)
 app.use('/api/export', exportRoutes)
@@ -46,6 +49,7 @@ app.use('/api/external', externalAPIRoutes)
 app.use('/api/group-budgets', groupBudgetRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

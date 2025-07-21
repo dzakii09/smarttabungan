@@ -35,6 +35,8 @@ interface AppContextType {
   setCategories: (categories: Category[]) => void;
   fetchCategories: () => Promise<void>;
   token: string | null;
+  selectedMonths: string[];
+  setSelectedMonths: (months: string[]) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -48,6 +50,8 @@ export const useApp = () => {
 };
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  console.log('🔍 Debug: AppProvider rendering...');
+  
   const [user, setUser] = useState<User | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -70,8 +74,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   const [categories, setCategories] = useState<Category[]>([]);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
 
   const isAuthenticated = user !== null;
+  
+  console.log('🔍 Debug: isAuthenticated:', isAuthenticated);
+  console.log('🔍 Debug: token exists:', !!token);
 
   // Get token from localStorage
   const getToken = () => {
@@ -244,7 +252,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       categories,
       setCategories,
       fetchCategories,
-      token
+      token,
+      selectedMonths,
+      setSelectedMonths
     }}>
       {children}
     </AppContext.Provider>

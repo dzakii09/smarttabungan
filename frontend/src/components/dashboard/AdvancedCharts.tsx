@@ -42,6 +42,9 @@ const AdvancedCharts: React.FC = () => {
 
   const data = calculateMonthlyData();
 
+  // Check if we have any real data
+  const hasRealData = data.length > 0 && !data.every(item => item.income === 0 && item.expense === 0);
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -62,18 +65,61 @@ const AdvancedCharts: React.FC = () => {
     return null;
   };
 
-  // Add sample data for demonstration if no real data
-  const sampleData = [
-    { month: 'Jan', income: 8000000, expense: 6000000, savings: 2000000 },
-    { month: 'Feb', income: 7500000, expense: 5500000, savings: 2000000 },
-    { month: 'Mar', income: 9000000, expense: 7000000, savings: 2000000 },
-    { month: 'Apr', income: 8500000, expense: 6500000, savings: 2000000 },
-    { month: 'Mei', income: 9500000, expense: 7500000, savings: 2000000 },
-    { month: 'Jun', income: 10000000, expense: 8000000, savings: 2000000 }
-  ];
+  // Empty state when no data
+  if (!hasRealData) {
+    return (
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-100">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-neutral-800">
+            Grafik Lanjutan
+          </h3>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setActiveChart('line')}
+              className={`p-2 rounded-lg transition-colors ${
+                activeChart === 'line' 
+                  ? 'bg-blue-100 text-blue-600' 
+                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+              }`}
+              title="Line Chart"
+            >
+              <TrendingUp className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setActiveChart('bar')}
+              className={`p-2 rounded-lg transition-colors ${
+                activeChart === 'bar' 
+                  ? 'bg-blue-100 text-blue-600' 
+                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+              }`}
+              title="Bar Chart"
+            >
+              <BarChart3 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
 
-  const displayData = (data.length > 0 && !data.every(item => item.income === 0 && item.expense === 0)) ? data : sampleData;
-  const isSampleData = data.length === 0 || data.every(item => item.income === 0 && item.expense === 0);
+        {/* Empty State */}
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="text-center max-w-sm mx-auto">
+            <div className="p-4 bg-blue-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <BarChart3 className="w-8 h-8 text-blue-600" />
+            </div>
+            <h4 className="text-lg font-semibold text-neutral-800 mb-2">Belum Ada Data Grafik</h4>
+            <p className="text-neutral-600 mb-6">
+              Mulai dengan menambahkan transaksi untuk melihat grafik lanjutan keuangan Anda.
+            </p>
+            <button
+              onClick={() => window.location.href = '/transactions'}
+              className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+            >
+              Tambah Transaksi
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-100">
@@ -82,11 +128,7 @@ const AdvancedCharts: React.FC = () => {
             Grafik Lanjutan
           </h3>
           <div className="flex items-center space-x-2">
-            {isSampleData && (
-              <div className="mr-2 p-2 bg-blue-50 rounded-lg">
-                <p className="text-xs text-blue-700">Data contoh</p>
-              </div>
-            )}
+            {/* Removed sample data indicator */}
           <button
             onClick={() => setActiveChart('line')}
             className={`p-2 rounded-lg transition-colors ${
@@ -115,7 +157,7 @@ const AdvancedCharts: React.FC = () => {
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           {activeChart === 'line' ? (
-            <LineChart data={displayData}>
+            <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis 
                 dataKey="month" 
@@ -160,7 +202,7 @@ const AdvancedCharts: React.FC = () => {
               />
             </LineChart>
                       ) : (
-            <BarChart data={displayData}>
+            <BarChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis 
                 dataKey="month" 

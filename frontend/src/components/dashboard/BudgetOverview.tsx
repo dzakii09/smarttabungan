@@ -49,7 +49,10 @@ const BudgetOverview: React.FC = () => {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm text-neutral-600">Progress Keseluruhan</span>
-            <span className="text-sm font-medium text-neutral-800">
+            <span className={`text-sm font-medium ${
+              budgetStats.overallProgress >= 100 ? 'text-red-600' :
+              budgetStats.overallProgress >= 80 ? 'text-yellow-600' : 'text-neutral-800'
+            }`}>
               {budgetStats.overallProgress.toFixed(1)}%
             </span>
           </div>

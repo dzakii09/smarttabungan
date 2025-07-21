@@ -11,6 +11,7 @@ import Budgets from './pages/Budgets';
 import GroupBudgets from './pages/GroupBudgets';
 import GroupBudgetDetail from './pages/GroupBudgetDetail';
 import Notifications from './pages/Notifications';
+import Analytics from './pages/Analytics';
 
 import PaymentGateway from './pages/PaymentGateway';
 import DataImportExport from './pages/DataImportExport';
@@ -52,12 +53,12 @@ const AppRoutes: React.FC = () => {
                   <Budgets />
                 </ProtectedRoute>
               } />
-              <Route path="/group-budgets" element={
+              <Route path="/tabungan-bersama" element={
                 <ProtectedRoute>
                   <GroupBudgets />
                 </ProtectedRoute>
               } />
-              <Route path="/group-budgets/:id" element={
+              <Route path="/tabungan-bersama/:id" element={
                 <ProtectedRoute>
                   <GroupBudgetDetail />
                 </ProtectedRoute>
@@ -65,6 +66,11 @@ const AppRoutes: React.FC = () => {
               <Route path="/goals" element={
                 <ProtectedRoute>
                   <Goals />
+                </ProtectedRoute>
+              } />
+              <Route path="/analytics" element={
+                <ProtectedRoute>
+                  <Analytics />
                 </ProtectedRoute>
               } />
               <Route path="/notifications" element={
@@ -107,6 +113,8 @@ const AppRoutes: React.FC = () => {
 
 // Main App Component
 const App: React.FC = () => {
+  console.log('🔍 Debug: App component rendering...');
+  
   return (
     <AppProvider>
       <Toaster richColors position="top-center" />

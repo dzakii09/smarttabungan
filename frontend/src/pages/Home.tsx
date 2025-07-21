@@ -5,6 +5,7 @@ import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
 
 const Home: React.FC = () => {
+  console.log('🔍 Debug: Home component rendering...');
   const [showRegister, setShowRegister] = useState(false);
 
   const features = [
@@ -26,8 +27,8 @@ const Home: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-100">
-      <div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-100 p-4">
+      <div className="w-full max-w-md">
         {showRegister ? (
           <RegisterForm onShowLogin={() => setShowRegister(false)} />
         ) : (

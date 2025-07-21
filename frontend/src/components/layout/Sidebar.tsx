@@ -31,8 +31,9 @@ const Sidebar: React.FC = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: CreditCard, label: 'Transaksi', path: '/transactions' },
     { icon: PiggyBank, label: 'Anggaran', path: '/budgets' },
-    { icon: Users, label: 'Group Budget', path: '/group-budgets' },
+    { icon: Users, label: 'Tabungan Bersama', path: '/tabungan-bersama' },
     { icon: Target, label: 'Tujuan Keuangan', path: '/goals' },
+    { icon: TrendingUp, label: 'Analytics', path: '/analytics' },
     { icon: MessageCircle, label: 'Chat AI', path: '/chatbot' },
   ];
 
@@ -50,11 +51,9 @@ const Sidebar: React.FC = () => {
       <div className={`flex items-center justify-between px-2 py-3 border-b border-neutral-100 ${collapsed ? 'justify-center' : ''}`} style={{ minHeight: 56 }}>
         {!collapsed && (
           <div className="flex items-center gap-2 animate-fade-in">
-            <img
-              src={user?.avatar || '/avatar-default.svg'}
-              alt="Avatar"
-              className="w-8 h-8 rounded-full border border-primary-200 object-cover bg-neutral-100"
-            />
+            <div className="w-8 h-8 rounded-full border border-primary-200 bg-primary-500 flex items-center justify-center">
+              <User size={16} className="text-white" />
+            </div>
             <div>
               <div className="font-bold text-neutral-800 text-xs leading-tight">{user?.name || 'Pengguna'}</div>
               <div className="text-[10px] text-neutral-400">{user?.email || '-'}</div>

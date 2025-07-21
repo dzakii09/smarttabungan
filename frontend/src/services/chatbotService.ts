@@ -76,37 +76,12 @@ export class ChatbotService {
     }
   }
 
-  async getFinancialInsights(): Promise<{
-    spendingPatterns: any;
-    savingTrends: any;
-    goalProgress: any;
-    recommendations: string[];
-  }> {
+
+
+  async getPersonalizedSuggestions(): Promise<string[]> {
     try {
       const context = await this.getUserContext();
       
-      // Analyze spending patterns
-      const expenseTransactions = context.transactions.filter(t => t.type === 'expense');
-      const categorySpending = expenseTransactions.reduce((acc, t) => {
-        const category = t.category?.name || 'Lainnya';
-        acc[category] = (acc[category] || 0) + t.amount;
-        return acc;
-      }, {} as Record<string, number>);
-
-      // Analyze saving trends
-      const incomeTransactions = context.transactions.filter(t => t.type === 'income');
-      const totalIncome = incomeTransactions.reduce((sum, t) => sum + t.amount, 0);
-      const totalExpenses = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
-      const netSavings = totalIncome - totalExpenses;
-
-      // Analyze goal progress
-      const goalProgress = context.goals.map(goal => ({
-        name: goal.name,
-        progress: (goal.currentAmount / goal.targetAmount) * 100,
-        daysLeft: Math.ceil((new Date(goal.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-      }));
-
-      // Generate recommendations
       const recommendations: string[] = [];
       
       if (context.savingsRate < 10) {
@@ -117,32 +92,16 @@ export class ChatbotService {
         recommendations.push('Pertimbangkan investasi untuk pertumbuhan kekayaan');
       }
       
-      const urgentGoals = goalProgress.filter(g => g.progress < 50 && g.daysLeft < 90);
-      if (urgentGoals.length > 0) {
-        recommendations.push(`Percepat progress untuk tujuan: ${urgentGoals.map(g => g.name).join(', ')}`);
+      if (context.goals.length === 0) {
+        recommendations.push('Buat tujuan keuangan yang spesifik');
       }
-
-      return {
-        spendingPatterns: categorySpending,
-        savingTrends: {
-          totalIncome,
-          totalExpenses,
-          netSavings,
-          savingsRate: context.savingsRate
-        },
-        goalProgress,
-        recommendations
-      };
-    } catch (error) {
-      console.error('Error getting financial insights:', error);
-      throw new Error('Gagal menganalisis insight keuangan');
-    }
-  }
-
-  async getPersonalizedSuggestions(): Promise<string[]> {
-    try {
-      const insights = await this.getFinancialInsights();
-      return insights.recommendations;
+      
+      if (recommendations.length === 0) {
+        recommendations.push('Mulai dengan mencatat semua transaksi');
+        recommendations.push('Set target tabungan bulanan');
+      }
+      
+      return recommendations;
     } catch (error) {
       console.error('Error getting personalized suggestions:', error);
       return [

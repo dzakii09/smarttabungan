@@ -3,7 +3,8 @@ import {
   getSpendingInsights,
   getSavingsTips,
   getFinancialAdvice,
-  chatWithAI  // Add this import
+  chatWithAI,
+  insightDashboard
 } from '../controllers/aiController';
 import { auth } from '../middleware/auth';
 
@@ -16,19 +17,19 @@ router.use((req, res, next) => {
   next();
 });
 
-// Chatbot endpoint - ADD THIS
+// Chat with AI
 router.post('/chat', auth as any, chatWithAI as any);
+
+// Endpoint insight dashboard (AI insight untuk chart perbandingan bulanan)
+router.post('/insight-dashboard', auth as any, insightDashboard as any);
 
 // Get AI insights
 router.get('/insights', auth as any, getSpendingInsights as any);
 
-// Get spending insights
-router.get('/spending-insights', auth as any, getSpendingInsights as any);
-
 // Get savings tips
-router.get('/savings-tips', auth as any, getSavingsTips as any);
+router.get('/tips', auth as any, getSavingsTips as any);
 
 // Get financial advice
-router.get('/financial-advice', auth as any, getFinancialAdvice as any);
+router.get('/advice', auth as any, getFinancialAdvice as any);
 
-export default router;
+export default router; 

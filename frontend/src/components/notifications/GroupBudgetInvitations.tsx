@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Users, Check, X, Clock } from 'lucide-react'
-import groupBudgetService, { GroupBudgetInvitation } from '../../services/groupBudgetService'
+import groupBudgetService from '../../services/groupBudgetService'
+import { TabunganBersamaInvitation as GroupBudgetInvitation } from '../../services/groupBudgetService'
 
 interface GroupBudgetInvitationsProps {
   onClose: () => void
@@ -78,7 +79,7 @@ const GroupBudgetInvitations: React.FC<GroupBudgetInvitationsProps> = ({ onClose
   return (
     <div className="p-4 max-h-96 overflow-y-auto">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Group Budget Invitations</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Tabungan Bersama Invitations</h3>
         <button
           onClick={onClose}
           className="text-gray-400 hover:text-gray-600"
@@ -96,16 +97,16 @@ const GroupBudgetInvitations: React.FC<GroupBudgetInvitationsProps> = ({ onClose
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
                 <h4 className="font-medium text-gray-900 mb-1">
-                  {invitation.groupBudget.name}
+                  {invitation.tabunganBersama.name}
                 </h4>
                 <p className="text-sm text-gray-600 mb-2">
                   Invited by {invitation.inviter.name}
                 </p>
-                {invitation.groupBudget.category && (
+                {invitation.tabunganBersama.category && (
                   <div className="flex items-center gap-1 mb-2">
                     <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                     <span className="text-xs text-gray-500">
-                      {invitation.groupBudget.category.name}
+                      {invitation.tabunganBersama.category.name}
                     </span>
                   </div>
                 )}
