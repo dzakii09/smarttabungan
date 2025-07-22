@@ -76,6 +76,10 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.id
     const { page = 1, limit = 10, type, categoryId, startDate, endDate } = req.query
 
+    console.log('🔍 Debug: getTransactions called')
+    console.log('🔍 Debug: User ID:', userId)
+    console.log('🔍 Debug: Query params:', { page, limit, type, categoryId, startDate, endDate })
+
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string)
 
     const where: any = { userId }
@@ -88,6 +92,8 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
         lte: new Date(endDate as string)
       }
     }
+
+    console.log('🔍 Debug: Where clause:', where)
 
     const transactions = await prisma.transaction.findMany({
       where,
@@ -102,6 +108,10 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
     })
 
     const total = await prisma.transaction.count({ where })
+
+    console.log('🔍 Debug: Found transactions:', transactions.length)
+    console.log('🔍 Debug: Total transactions:', total)
+    console.log('🔍 Debug: Sample transaction:', transactions[0])
 
     res.json({
       transactions,

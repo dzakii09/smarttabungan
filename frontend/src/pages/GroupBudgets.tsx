@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, Search, Users, Calendar, DollarSign, Trash2, Edit, Eye } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import groupBudgetService, { GroupBudget, CreateGroupBudgetData, User } from '../services/groupBudgetService'
+import groupBudgetService, { TabunganBersama, CreateTabunganBersamaData, User } from '../services/groupBudgetService'
 import { categoryService } from '../services/categoryService'
 
 interface Category {
@@ -12,18 +12,18 @@ interface Category {
 
 const GroupBudgets: React.FC = () => {
   const navigate = useNavigate()
-  const [groupBudgets, setGroupBudgets] = useState<GroupBudget[]>([])
+  const [groupBudgets, setGroupBudgets] = useState<TabunganBersama[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
-  const [selectedGroupBudget, setSelectedGroupBudget] = useState<GroupBudget | null>(null)
+  const [selectedGroupBudget, setSelectedGroupBudget] = useState<TabunganBersama | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<User[]>([])
   const [searching, setSearching] = useState(false)
 
   // Form states
-  const [formData, setFormData] = useState<CreateGroupBudgetData>({
+  const [formData, setFormData] = useState<CreateTabunganBersamaData>({
     name: '',
     description: '',
     amount: 0,
@@ -95,14 +95,31 @@ const GroupBudgets: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true)
+      console.log('🔍 Debug: Loading data...')
+      
       const [budgetsData, categoriesData] = await Promise.all([
-        groupBudgetService.getGroupBudgets(),
+        groupBudgetService.getTabunganBersamas(),
         categoryService.getAll()
       ])
-      setGroupBudgets(budgetsData)
-      setCategories(categoriesData)
+      
+      console.log('🔍 Debug: Budgets data:', budgetsData)
+      console.log('🔍 Debug: Categories data:', categoriesData)
+      console.log('🔍 Debug: Categories length:', categoriesData?.length)
+      
+      // Ensure budgetsData is an array and has valid structure
+      const validBudgets = Array.isArray(budgetsData) ? budgetsData.filter(budget => 
+        budget && typeof budget === 'object' && budget.id && budget.name
+      ) : []
+      
+      console.log('🔍 Debug: Valid budgets:', validBudgets)
+      
+      setGroupBudgets(validBudgets)
+      setCategories(categoriesData || [])
     } catch (error) {
       console.error('Error loading data:', error)
+      console.error('🔍 Debug: Error details:', error)
+      setGroupBudgets([])
+      setCategories([])
     } finally {
       setLoading(false)
     }
@@ -121,7 +138,7 @@ const GroupBudgets: React.FC = () => {
     let finalFormData = { ...formData };
     
     try {
-      const newGroupBudget = await groupBudgetService.createGroupBudget(finalFormData)
+      const newGroupBudget = await groupBudgetService.createTabunganBersama(finalFormData)
       setGroupBudgets([newGroupBudget, ...groupBudgets])
       setShowCreateModal(false)
       setFormData({
@@ -143,7 +160,7 @@ const GroupBudgets: React.FC = () => {
   const handleDeleteGroupBudget = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this group budget?')) {
       try {
-        await groupBudgetService.deleteGroupBudget(id)
+        await groupBudgetService.deleteTabunganBersama(id)
         setGroupBudgets(groupBudgets.filter(budget => budget.id !== id))
       } catch (error) {
         console.error('Error deleting group budget:', error)
@@ -184,8 +201,8 @@ const GroupBudgets: React.FC = () => {
   }
 
   const filteredGroupBudgets = groupBudgets.filter(budget =>
-    budget.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    budget.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    budget?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    budget?.description?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const formatCurrency = (amount: number) => {
@@ -210,12 +227,12 @@ const GroupBudgets: React.FC = () => {
   }
 
   // Hitung progress konfirmasi member per periode
-  const getConfirmationProgress = (budget: GroupBudget) => {
-    if (!budget.periods || budget.periods.length === 0) return 0
-    const totalMembers = budget.members.length
+  const getConfirmationProgress = (budget: TabunganBersama) => {
+    if (!budget?.periods || budget.periods.length === 0) return 0
+    const totalMembers = budget?.members?.length || 0
     const totalPeriods = budget.periods.length
     let totalConfirm = 0
-    budget.periods.forEach(period => {
+    budget.periods.forEach((period: any) => {
       const confirmations = (period as any).GroupBudgetPeriodConfirmation || []
       totalConfirm += confirmations.filter((c: any) => c.confirmedAt).length
     })
@@ -229,6 +246,18 @@ const GroupBudgets: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (!Array.isArray(groupBudgets)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Data</h2>
+          <p className="text-gray-600">Failed to load group budgets. Please try refreshing the page.</p>
+        </div>
       </div>
     )
   }
@@ -272,17 +301,17 @@ const GroupBudgets: React.FC = () => {
           const progressColor = getProgressColor(progressPercentage)
 
           return (
-            <div key={budget.id} className="bg-white rounded-lg shadow p-6">
+            <div key={budget?.id || 'unknown'} className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{budget.name}</h3>
-                  {budget.description && (
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{budget?.name || 'Unnamed Budget'}</h3>
+                  {budget?.description && (
                     <p className="text-sm text-gray-600">{budget.description}</p>
                   )}
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => navigate(`/tabungan-bersama/${budget.id}`)}
+                    onClick={() => navigate(`/tabungan-bersama/${budget?.id}`)}
                     className="text-blue-600 hover:text-blue-700"
                     title="View Details"
                   >
@@ -299,7 +328,7 @@ const GroupBudgets: React.FC = () => {
                     <Users size={16} />
                   </button>
                   <button
-                    onClick={() => handleDeleteGroupBudget(budget.id)}
+                    onClick={() => handleDeleteGroupBudget(budget?.id || '')}
                     className="text-red-600 hover:text-red-700"
                     title="Delete"
                   >
@@ -312,19 +341,19 @@ const GroupBudgets: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <DollarSign size={16} className="text-gray-500" />
                   <span className="text-sm text-gray-600">
-                    {formatCurrency(budget.spent)} / {formatCurrency(budget.amount)}
+                    {formatCurrency(budget?.spent || 0)} / {formatCurrency(budget?.amount || 0)}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Calendar size={16} className="text-gray-500" />
                   <span className="text-sm text-gray-600 capitalize">
-                    {budget.period} • {budget.duration} {budget.period}
-                    {budget.duration > 1 ? 's' : ''} • {formatDate(budget.startDate)} - {formatDate(budget.endDate)}
+                    {budget?.period} • {budget?.duration} {budget?.period}
+                    {(budget?.duration || 0) > 1 ? 's' : ''} • {formatDate(budget?.startDate || '')} - {formatDate(budget?.endDate || '')}
                   </span>
                 </div>
 
-                {budget.category && (
+                {budget?.category && (
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                     <span className="text-sm text-gray-600">{budget.category.name}</span>
@@ -352,15 +381,15 @@ const GroupBudgets: React.FC = () => {
                 <div className="mt-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Users size={16} className="text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">Members ({budget.members.length})</span>
+                    <span className="text-sm font-medium text-gray-700">Members ({budget?.members?.length || 0})</span>
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {budget.members.slice(0, 3).map((member) => (
+                    {budget?.members?.slice(0, 3).map((member) => (
                       <span
-                        key={member.id}
+                        key={member?.id || 'unknown'}
                         className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
                       >
-                        {member.user.name}
+                        {member?.user?.name || 'Unknown User'}
                       </span>
                     ))}
                     {budget.members.length > 3 && (

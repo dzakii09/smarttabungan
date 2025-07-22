@@ -146,13 +146,19 @@ class TabunganBersamaService {
 
   // Get all group budgets
   async getTabunganBersamas(): Promise<TabunganBersama[]> {
-    const response = await api.get('/group-budgets')
+    const token = localStorage.getItem('token')
+    const response = await api.get('/group-budgets', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
     return response.data as TabunganBersama[]
   }
 
   // Get group budget by ID
   async getTabunganBersamaById(id: string): Promise<TabunganBersama> {
-    const response = await api.get(`/group-budgets/${id}`)
+    const token = localStorage.getItem('token')
+    const response = await api.get(`/group-budgets/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
     return response.data as TabunganBersama
   }
 
@@ -169,7 +175,10 @@ class TabunganBersamaService {
 
   // Get group budget periods
   async getTabunganBersamaPeriods(tabunganBersamaId: string): Promise<TabunganBersamaPeriod[]> {
-    const response = await api.get(`/group-budgets/${tabunganBersamaId}/periods`)
+    const token = localStorage.getItem('token')
+    const response = await api.get(`/group-budgets/${tabunganBersamaId}/periods`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
     return response.data as TabunganBersamaPeriod[]
   }
 
@@ -181,25 +190,8 @@ class TabunganBersamaService {
 
   // Add transaction to group budget period
   async addTabunganBersamaTransaction(data: AddTabunganBersamaTransactionData): Promise<any> {
-    const token = localStorage.getItem('token')
-    if (!token) throw new Error('No token found')
-
-    const response = await fetch(`${API_BASE_URL}/group-budgets/${data.tabunganBersamaId}/transactions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(data)
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.message || 'Failed to add transaction')
-    }
-
-    const result = await response.json()
-    return result // Returns { message, transaction, isLate, warning }
+    const response = await api.post(`/group-budgets/${data.tabunganBersamaId}/transactions`, data)
+    return response.data
   }
 
   // Search users
@@ -232,25 +224,14 @@ class TabunganBersamaService {
 
   // Get period confirmations (status konfirmasi semua member pada periode)
   async getPeriodConfirmations(periodId: string): Promise<Array<{userId: string, name: string, confirmedAt: string | null}>> {
-    const token = localStorage.getItem('token')
-    if (!token) throw new Error('No token found')
-    const response = await fetch(`${API_BASE_URL}/group-budgets/periods/${periodId}/confirmations`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    if (!response.ok) throw new Error('Failed to get confirmations')
-    return await response.json()
+    const response = await api.get(`/group-budgets/periods/${periodId}/confirmations`)
+    return response.data as Array<{userId: string, name: string, confirmedAt: string | null}>
   }
 
   // Confirm period for current user
   async confirmPeriod(periodId: string): Promise<any> {
-    const token = localStorage.getItem('token')
-    if (!token) throw new Error('No token found')
-    const response = await fetch(`${API_BASE_URL}/group-budgets/periods/${periodId}/confirm`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    if (!response.ok) throw new Error('Failed to confirm period')
-    return await response.json()
+    const response = await api.post(`/group-budgets/periods/${periodId}/confirm`, { confirmed: true })
+    return response.data
   }
 }
 

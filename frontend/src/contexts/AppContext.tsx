@@ -76,9 +76,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
 
+  // Check if user is authenticated from token
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token && !user) {
+      console.log('🔍 Debug: Token found, setting user from token...');
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        console.log('🔍 Debug: Token payload:', payload);
+        setUser({
+          id: payload.id,
+          name: payload.name || 'User',
+          email: payload.email || '',
+          avatar: ''
+        });
+        setToken(token);
+      } catch (error) {
+        console.error('🔍 Debug: Error parsing token:', error);
+        localStorage.removeItem('token');
+      }
+    }
+  }, [user, setUser]);
+
   const isAuthenticated = user !== null;
   
   console.log('🔍 Debug: isAuthenticated:', isAuthenticated);
+  console.log('🔍 Debug: user:', user);
   console.log('🔍 Debug: token exists:', !!token);
 
   // Get token from localStorage
@@ -154,24 +177,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const fetchTransactions = useCallback(async () => {
     try {
       const token = getToken();
-      if (!token) return;
+      if (!token) {
+        console.log('🔍 Debug: No token found, skipping transaction fetch');
+        return;
+      }
 
+      console.log('🔍 Debug: Fetching transactions...');
+      console.log('🔍 Debug: Token exists:', !!token);
+      console.log('🔍 Debug: Token preview:', token.substring(0, 50) + '...');
+      
       const res = await api.get('/transactions?limit=100', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      console.log('🔍 Debug: Transactions response:', res.data);
+      
       // Handle different response structures
       let transactionsData;
       if ((res.data as any).transactions) {
-        // Response has transactions property
+        // Response has transactions property (from getTransactions)
         transactionsData = (res.data as any).transactions;
+        console.log('🔍 Debug: Using transactions property from response');
       } else if (Array.isArray(res.data)) {
         // Response is directly an array
         transactionsData = res.data;
+        console.log('🔍 Debug: Using direct array response');
       } else {
         // Response has data property
         transactionsData = (res.data as any).data || [];
+        console.log('🔍 Debug: Using data property from response');
       }
+      
+      console.log('🔍 Debug: Processed transactions data:', transactionsData);
+      console.log('🔍 Debug: Transactions count:', transactionsData?.length || 0);
       
       setTransactions(Array.isArray(transactionsData) ? transactionsData : []);
     } catch (err) {
@@ -202,12 +240,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const token = getToken();
       if (!token) return;
 
+      console.log('🔍 Debug: Fetching categories...');
       const res = await api.get('/categories', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       const data = (res.data as any).data || res.data;
-      console.log('Fetched categories:', data);
+      console.log('🔍 Debug: Categories response:', data);
+      console.log('🔍 Debug: Categories count:', data?.length || 0);
       setCategories(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching categories:', err);
@@ -221,12 +261,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Fetch data when user is authenticated
   useEffect(() => {
+    console.log('🔍 Debug: useEffect triggered, isAuthenticated:', isAuthenticated);
     if (isAuthenticated) {
+      console.log('🔍 Debug: User authenticated, fetching data...');
       fetchDashboardData();
       fetchTransactions();
       fetchGoals();
       fetchCategories();
       fetchBudgetStats();
+    } else {
+      console.log('🔍 Debug: User not authenticated, skipping data fetch');
     }
   }, [isAuthenticated, fetchDashboardData, fetchTransactions, fetchGoals, fetchCategories, fetchBudgetStats]);
 

@@ -9,24 +9,19 @@ import {
   DollarSign, 
   Calendar,
   BarChart3,
-  PieChart,
   ArrowRight,
   Sparkles,
-  Zap,
   Eye,
   Brain,
   Award,
   Clock,
-  Users,
-  PiggyBank,
-  Shield
+  PiggyBank
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
 const SpendingInsights: React.FC = () => {
   const { transactions, categories, budgetStats, goals } = useApp();
   const [selectedInsight, setSelectedInsight] = useState<number | null>(null);
-  const [showDetailedView, setShowDetailedView] = useState(false);
 
   // Calculate spending insights
   const calculateSpendingInsights = () => {
@@ -526,133 +521,7 @@ const SpendingInsights: React.FC = () => {
         })}
       </div>
 
-      {/* Enhanced Quick Actions */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-            <Zap className="w-4 h-4 text-yellow-500" />
-            Aksi Cepat
-          </h4>
-          <button 
-            onClick={() => setShowDetailedView(!showDetailedView)}
-            className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
-          >
-            {showDetailedView ? 'Sembunyikan' : 'Tampilkan Semua'}
-          </button>
-        </div>
-        
-        <div className={`grid gap-3 transition-all duration-300 ${
-          showDetailedView ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2 md:grid-cols-4'
-        }`}>
-          <button
-            onClick={() => window.location.href = '/transactions'}
-            className="group flex items-center gap-3 p-4 text-sm bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 rounded-xl hover:from-blue-100 hover:to-blue-200 transition-all shadow-sm hover:shadow-md transform hover:scale-105"
-          >
-            <div className="p-2 bg-blue-200 rounded-lg group-hover:bg-blue-300 transition-colors">
-              <DollarSign className="w-4 h-4" />
-            </div>
-            <div className="text-left">
-              <div className="font-medium">Tambah Transaksi</div>
-              <div className="text-xs text-blue-600">Catat pengeluaran</div>
-            </div>
-          </button>
-          
-          <button
-            onClick={() => window.location.href = '/budgets'}
-            className="group flex items-center gap-3 p-4 text-sm bg-gradient-to-r from-green-50 to-green-100 text-green-700 rounded-xl hover:from-green-100 hover:to-green-200 transition-all shadow-sm hover:shadow-md transform hover:scale-105"
-          >
-            <div className="p-2 bg-green-200 rounded-lg group-hover:bg-green-300 transition-colors">
-              <Target className="w-4 h-4" />
-            </div>
-            <div className="text-left">
-              <div className="font-medium">Kelola Budget</div>
-              <div className="text-xs text-green-600">Atur pengeluaran</div>
-            </div>
-          </button>
-          
-          <button
-            onClick={() => window.location.href = '/analytics'}
-            className="group flex items-center gap-3 p-4 text-sm bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 rounded-xl hover:from-purple-100 hover:to-purple-200 transition-all shadow-sm hover:shadow-md transform hover:scale-105"
-          >
-            <div className="p-2 bg-purple-200 rounded-lg group-hover:bg-purple-300 transition-colors">
-              <BarChart3 className="w-4 h-4" />
-            </div>
-            <div className="text-left">
-              <div className="font-medium">Lihat Analytics</div>
-              <div className="text-xs text-purple-600">Analisis detail</div>
-            </div>
-          </button>
-          
-          <button
-            onClick={() => window.location.href = '/goals'}
-            className="group flex items-center gap-3 p-4 text-sm bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 rounded-xl hover:from-orange-100 hover:to-orange-200 transition-all shadow-sm hover:shadow-md transform hover:scale-105"
-          >
-            <div className="p-2 bg-orange-200 rounded-lg group-hover:bg-orange-300 transition-colors">
-              <Target className="w-4 h-4" />
-            </div>
-            <div className="text-left">
-              <div className="font-medium">Set Goals</div>
-              <div className="text-xs text-orange-600">Tujuan keuangan</div>
-            </div>
-          </button>
-        </div>
 
-        {showDetailedView && (
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 animate-fade-in">
-            <button
-              onClick={() => window.location.href = '/chatbot'}
-              className="group flex items-center gap-3 p-4 text-sm bg-gradient-to-r from-indigo-50 to-indigo-100 text-indigo-700 rounded-xl hover:from-indigo-100 hover:to-indigo-200 transition-all shadow-sm hover:shadow-md transform hover:scale-105"
-            >
-              <div className="p-2 bg-indigo-200 rounded-lg group-hover:bg-indigo-300 transition-colors">
-                <Brain className="w-4 h-4" />
-              </div>
-              <div className="text-left">
-                <div className="font-medium">AI Chatbot</div>
-                <div className="text-xs text-indigo-600">Tanya AI</div>
-              </div>
-            </button>
-            
-            <button
-              onClick={() => window.location.href = '/notifications'}
-              className="group flex items-center gap-3 p-4 text-sm bg-gradient-to-r from-pink-50 to-pink-100 text-pink-700 rounded-xl hover:from-pink-100 hover:to-pink-200 transition-all shadow-sm hover:shadow-md transform hover:scale-105"
-            >
-              <div className="p-2 bg-pink-200 rounded-lg group-hover:bg-pink-300 transition-colors">
-                <AlertTriangle className="w-4 h-4" />
-              </div>
-              <div className="text-left">
-                <div className="font-medium">Notifikasi</div>
-                <div className="text-xs text-pink-600">Alert & reminder</div>
-              </div>
-            </button>
-            
-            <button
-              onClick={() => window.location.href = '/settings'}
-              className="group flex items-center gap-3 p-4 text-sm bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 rounded-xl hover:from-gray-100 hover:to-gray-200 transition-all shadow-sm hover:shadow-md transform hover:scale-105"
-            >
-              <div className="p-2 bg-gray-200 rounded-lg group-hover:bg-gray-300 transition-colors">
-                <Shield className="w-4 h-4" />
-              </div>
-              <div className="text-left">
-                <div className="font-medium">Pengaturan</div>
-                <div className="text-xs text-gray-600">Keamanan & privasi</div>
-              </div>
-            </button>
-            
-            <button
-              onClick={() => window.location.href = '/group-budgets'}
-              className="group flex items-center gap-3 p-4 text-sm bg-gradient-to-r from-teal-50 to-teal-100 text-teal-700 rounded-xl hover:from-teal-100 hover:to-teal-200 transition-all shadow-sm hover:shadow-md transform hover:scale-105"
-            >
-              <div className="p-2 bg-teal-200 rounded-lg group-hover:bg-teal-300 transition-colors">
-                <Users className="w-4 h-4" />
-              </div>
-              <div className="text-left">
-                <div className="font-medium">Budget Kelompok</div>
-                <div className="text-xs text-teal-600">Kolaborasi</div>
-              </div>
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   );
 };

@@ -12,6 +12,12 @@ type PeriodOption = {
 
 const ExpenseChart: React.FC = () => {
   const { transactions, categories, selectedMonths } = useApp();
+  
+  console.log('🔍 Debug: ExpenseChart rendered');
+  console.log('🔍 Debug: transactions length:', transactions?.length || 0);
+  console.log('🔍 Debug: categories length:', categories?.length || 0);
+  console.log('🔍 Debug: transactions:', transactions);
+  console.log('🔍 Debug: categories:', categories);
   const [showComparison, setShowComparison] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<string>('current');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
@@ -94,10 +100,17 @@ const ExpenseChart: React.FC = () => {
 
   // Calculate expense data for specific month
   const calculateExpenseData = (monthFilter?: string) => {
+    console.log('🔍 Debug: calculateExpenseData called');
+    console.log('🔍 Debug: Total transactions:', transactions.length);
+    console.log('🔍 Debug: Total categories:', categories.length);
+    console.log('🔍 Debug: Month filter:', monthFilter);
+    
     let filteredTransactions = transactions.filter(tx => tx.type === 'expense' && tx.categoryId);
+    console.log('🔍 Debug: Expense transactions with categoryId:', filteredTransactions.length);
     
     if (monthFilter) {
       filteredTransactions = filteredTransactions.filter(tx => tx.date.startsWith(monthFilter));
+      console.log('🔍 Debug: Filtered by month:', filteredTransactions.length);
     }
     
     // Group by category and sum amounts
@@ -108,8 +121,12 @@ const ExpenseChart: React.FC = () => {
       if (category) {
         const currentTotal = categoryTotals.get(category.name) || 0;
         categoryTotals.set(category.name, currentTotal + transaction.amount);
+      } else {
+        console.log('🔍 Debug: Category not found for transaction:', transaction);
       }
     });
+
+    console.log('🔍 Debug: Category totals:', Array.from(categoryTotals.entries()));
 
     // Convert to chart data format
     const chartData = Array.from(categoryTotals.entries()).map(([name, value]) => {
@@ -121,6 +138,8 @@ const ExpenseChart: React.FC = () => {
       };
     });
 
+    console.log('🔍 Debug: Final chart data:', chartData);
+    
     // Sort by value descending
     return chartData.sort((a, b) => b.value - a.value);
   };
@@ -169,6 +188,10 @@ const ExpenseChart: React.FC = () => {
 
   // Check if we have any real data
   const hasRealData = displayData.length > 0;
+  
+  console.log('🔍 Debug: hasRealData:', hasRealData);
+  console.log('🔍 Debug: displayData length:', displayData.length);
+  console.log('🔍 Debug: displayData:', displayData);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {

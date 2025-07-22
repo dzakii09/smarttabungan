@@ -19,6 +19,7 @@ import RecentTransactions from '../components/dashboard/RecentTransactions';
 import GoalProgress from '../components/dashboard/GoalProgress';
 import BudgetOverview from '../components/dashboard/BudgetOverview';
 import QuickActions from '../components/dashboard/QuickActions';
+
 import api from '../api';
 
 const Dashboard: React.FC = () => {

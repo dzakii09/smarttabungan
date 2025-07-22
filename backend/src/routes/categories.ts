@@ -6,13 +6,17 @@ import {
   updateCategory, 
   deleteCategory
 } from '../controllers/categoryController'
+import { auth } from '../middleware/auth'
 
 const router = express.Router()
 
-router.post('/', createCategory as any)
+// Allow public access to get categories for now
 router.get('/', getCategories as any)
 router.get('/:id', getCategoryById as any)
-router.put('/:id', updateCategory as any)
-router.delete('/:id', deleteCategory as any)
+
+// Require auth for modifications
+router.post('/', auth as any, createCategory as any)
+router.put('/:id', auth as any, updateCategory as any)
+router.delete('/:id', auth as any, deleteCategory as any)
 
 export default router 

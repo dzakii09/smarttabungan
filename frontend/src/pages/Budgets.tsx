@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, TrendingUp, AlertTriangle, CheckCircle, Target, Calendar, DollarSign, PieChart, Lightbulb, BarChart3 } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, TrendingUp, AlertTriangle, CheckCircle, Target, Calendar, DollarSign, PieChart } from 'lucide-react';
 import api from '../api';
 import { useApp } from '../contexts/AppContext';
 import { toast } from 'sonner';
@@ -25,16 +25,6 @@ interface Budget {
   alertThreshold?: number;
 }
 
-interface BudgetRecommendation {
-  categoryId: string;
-  categoryName: string;
-  recommendedAmount: number;
-  reason: string;
-  confidence: number;
-  historicalAverage: number;
-  trend: 'increasing' | 'decreasing' | 'stable';
-}
-
 interface BudgetStats {
   totalBudget: number;
   totalSpent: number;
@@ -54,13 +44,6 @@ interface BudgetStats {
   }[];
 }
 
-interface BudgetInsight {
-  type: 'warning' | 'success' | 'info';
-  message: string;
-  action?: string;
-  icon: string;
-}
-
 const Budgets: React.FC = () => {
   const token = localStorage.getItem('token');
   const { categories, transactions } = useApp();
@@ -68,12 +51,8 @@ const Budgets: React.FC = () => {
   const [stats, setStats] = useState<BudgetStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showRecommendations, setShowRecommendations] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [recommendations, setRecommendations] = useState<BudgetRecommendation[]>([]);
-  const [insights, setInsights] = useState<BudgetInsight[]>([]);
-  const [viewMode, setViewMode] = useState<'list' | 'chart' | 'insights'>('list');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -90,8 +69,6 @@ const Budgets: React.FC = () => {
     if (token) {
       fetchBudgets();
       fetchStats();
-      fetchRecommendations();
-      generateInsights();
     }
   }, [token]);
 
@@ -135,101 +112,6 @@ const Budgets: React.FC = () => {
     }
   };
 
-  const fetchRecommendations = async () => {
-    try {
-      const response = await api.get('/budgets/recommendations', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = (response.data as any).data || response.data;
-      setRecommendations(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Error fetching recommendations:', error);
-      // Generate local recommendations based on transaction history
-      generateLocalRecommendations();
-    }
-  };
-
-  const generateLocalRecommendations = () => {
-    const categoryTotals = new Map<string, number>();
-    const categoryCounts = new Map<string, number>();
-    
-    // Calculate average spending per category
-    transactions.forEach(transaction => {
-      if (transaction.type === 'expense' && transaction.categoryId) {
-        const currentTotal = categoryTotals.get(transaction.categoryId) || 0;
-        const currentCount = categoryCounts.get(transaction.categoryId) || 0;
-        categoryTotals.set(transaction.categoryId, currentTotal + transaction.amount);
-        categoryCounts.set(transaction.categoryId, currentCount + 1);
-      }
-    });
-
-    const localRecommendations: BudgetRecommendation[] = [];
-    
-    categoryTotals.forEach((total, categoryId) => {
-      const count = categoryCounts.get(categoryId) || 1;
-      const average = total / count;
-      const category = categories.find(cat => cat.id === categoryId);
-      
-      if (category) {
-        localRecommendations.push({
-          categoryId,
-          categoryName: category.name,
-          recommendedAmount: Math.round(average * 1.2), // 20% buffer
-          reason: `Berdasarkan rata-rata pengeluaran ${count} transaksi`,
-          confidence: Math.min(85, 50 + count * 5), // Higher confidence with more data
-          historicalAverage: average,
-          trend: 'stable'
-        });
-      }
-    });
-
-    setRecommendations(localRecommendations.slice(0, 6));
-  };
-
-  const generateInsights = () => {
-    const newInsights: BudgetInsight[] = [];
-    
-    if (budgets.length === 0) {
-      newInsights.push({
-        type: 'info',
-        message: 'Belum ada budget yang dibuat. Mulai dengan membuat budget untuk kategori pengeluaran utama.',
-        action: 'Buat Budget Pertama',
-        icon: '🎯'
-      });
-    }
-
-    if (stats) {
-      if (stats.exceededBudgets > 0) {
-        newInsights.push({
-          type: 'warning',
-          message: `${stats.exceededBudgets} budget telah terlampaui. Periksa pengeluaran Anda.`,
-          action: 'Lihat Detail',
-          icon: '⚠️'
-        });
-      }
-
-      if (stats.overallProgress > 80) {
-        newInsights.push({
-          type: 'warning',
-          message: 'Total pengeluaran sudah mencapai 80% dari budget. Hati-hati dengan pengeluaran selanjutnya.',
-          action: 'Review Budget',
-          icon: '📊'
-        });
-      }
-
-      if (stats.onTrackBudgets > stats.activeBudgets * 0.7) {
-        newInsights.push({
-          type: 'success',
-          message: 'Bagus! Sebagian besar budget Anda masih on track.',
-          action: 'Lihat Progress',
-          icon: '✅'
-        });
-      }
-    }
-
-    setInsights(newInsights);
-  };
-
   const handleCreateBudget = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -251,7 +133,6 @@ const Budgets: React.FC = () => {
         });
         await fetchBudgets();
         await fetchStats();
-        generateInsights();
       } else {
         toast.error((response.data as any).message || 'Gagal membuat budget');
       }
@@ -272,7 +153,6 @@ const Budgets: React.FC = () => {
         toast.success('Status budget berhasil diubah');
         await fetchBudgets();
         await fetchStats();
-        generateInsights();
       } else {
         toast.error((response.data as any).message || 'Gagal mengubah status budget');
       }
@@ -294,7 +174,6 @@ const Budgets: React.FC = () => {
           toast.success('Budget berhasil dihapus');
           await fetchBudgets();
           await fetchStats();
-          generateInsights();
         } else {
           toast.error((response.data as any).message || 'Gagal menghapus budget');
         }
@@ -366,13 +245,6 @@ const Budgets: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => setShowRecommendations(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-          >
-            <Lightbulb className="w-4 h-4" />
-            Rekomendasi
-          </button>
-          <button
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
           >
@@ -380,43 +252,6 @@ const Budgets: React.FC = () => {
             Buat Budget
           </button>
         </div>
-      </div>
-
-      {/* View Mode Toggle */}
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setViewMode('list')}
-          className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-            viewMode === 'list' 
-              ? 'bg-blue-100 text-blue-700' 
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <Eye className="w-4 h-4" />
-          Daftar
-        </button>
-        <button
-          onClick={() => setViewMode('chart')}
-          className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-            viewMode === 'chart' 
-              ? 'bg-blue-100 text-blue-700' 
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <BarChart3 className="w-4 h-4" />
-          Chart
-        </button>
-        <button
-          onClick={() => setViewMode('insights')}
-          className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-            viewMode === 'insights' 
-              ? 'bg-blue-100 text-blue-700' 
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <TrendingUp className="w-4 h-4" />
-          Insights
-        </button>
       </div>
 
       {/* Stats Cards */}
@@ -461,113 +296,77 @@ const Budgets: React.FC = () => {
         </div>
       )}
 
-      {/* Insights Section */}
-      {viewMode === 'insights' && insights.length > 0 && (
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Lightbulb className="w-5 h-5 text-yellow-500" />
-              Budget Insights
-            </h2>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {insights.map((insight, index) => (
-                <div key={index} className={`p-4 rounded-lg border ${
-                  insight.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
-                  insight.type === 'success' ? 'bg-green-50 border-green-200' :
-                  'bg-blue-50 border-blue-200'
-                }`}>
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">{insight.icon}</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 mb-1">{insight.message}</p>
-                      {insight.action && (
-                        <button className="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                          {insight.action} →
-                        </button>
+      {/* Budget List */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Daftar Budget</h2>
+        </div>
+        <div className="divide-y divide-gray-200">
+          {budgets.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">
+              <Target className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <p className="text-lg font-medium mb-2">Belum ada budget yang dibuat</p>
+              <p className="text-sm mb-4">Mulai dengan membuat budget untuk kategori pengeluaran utama Anda</p>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Buat Budget Pertama
+              </button>
+            </div>
+          ) : (
+            budgets.map((budget) => (
+              <div key={budget.id} className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    {getStatusIcon(budget.status)}
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">
+                        {budget.name || budget.category?.name || 'Total Budget'}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {budget.category?.name && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mr-2" 
+                                style={{ backgroundColor: `${budget.category.color}20`, color: budget.category.color }}>
+                            {budget.category.name}
+                          </span>
+                        )}
+                        {budget.period} • {new Date(budget.startDate).toLocaleDateString('id-ID')} - {new Date(budget.endDate).toLocaleDateString('id-ID')}
+                      </p>
+                      {budget.description && (
+                        <p className="text-sm text-gray-600 mt-1">{budget.description}</p>
                       )}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Budget List */}
-      {viewMode === 'list' && (
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Daftar Budget</h2>
-          </div>
-          <div className="divide-y divide-gray-200">
-            {budgets.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
-                <Target className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-lg font-medium mb-2">Belum ada budget yang dibuat</p>
-                <p className="text-sm mb-4">Mulai dengan membuat budget untuk kategori pengeluaran utama Anda</p>
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Buat Budget Pertama
-                </button>
-              </div>
-            ) : (
-              budgets.map((budget) => (
-                <div key={budget.id} className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      {getStatusIcon(budget.status)}
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900">
-                          {budget.name || budget.category?.name || 'Total Budget'}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          {budget.category?.name && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mr-2" 
-                                  style={{ backgroundColor: `${budget.category.color}20`, color: budget.category.color }}>
-                              {budget.category.name}
-                            </span>
-                          )}
-                          {budget.period} • {new Date(budget.startDate).toLocaleDateString('id-ID')} - {new Date(budget.endDate).toLocaleDateString('id-ID')}
-                        </p>
-                        {budget.description && (
-                          <p className="text-sm text-gray-600 mt-1">{budget.description}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(budget.status)}`}>
-                        {budget.status === 'exceeded' ? 'Terlampaui' : 
-                         budget.status === 'warning' ? 'Peringatan' : 'On Track'}
-                      </span>
-                      <button
-                        onClick={() => handleToggleStatus(budget.id)}
-                        className={`px-3 py-1 rounded text-sm ${budget.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
-                      >
-                        {budget.isActive ? 'Aktif' : 'Nonaktif'}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteBudget(budget.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(budget.status)}`}>
+                      {budget.status === 'exceeded' ? 'Terlampaui' : 
+                       budget.status === 'warning' ? 'Peringatan' : 'On Track'}
+                    </span>
+                    <button
+                      onClick={() => handleToggleStatus(budget.id)}
+                      className={`px-3 py-1 rounded text-sm ${budget.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
+                    >
+                      {budget.isActive ? 'Aktif' : 'Nonaktif'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBudget(budget.id)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  
-                  <div className="mt-4">
-                    <div className="flex justify-between text-sm text-gray-600 mb-2">
-                      <span>Progress: <span className={`font-medium ${
-                        budget.progress >= 100 ? 'text-red-600' :
-                        budget.progress >= 80 ? 'text-yellow-600' : 'text-gray-600'
-                      }`}>{budget.progress.toFixed(1)}%</span></span>
-                      <span>{formatCurrency(budget.spent)} / {formatCurrency(budget.amount)}</span>
-                    </div>
-                                      <div className="w-full bg-gray-200 rounded-full h-2">
+                </div>
+                
+                <div className="mt-4">
+                  <div className="flex justify-between text-sm text-gray-600 mb-2">
+                    <span>Progress: <span className={`font-medium ${
+                      budget.progress >= 100 ? 'text-red-600' :
+                      budget.progress >= 80 ? 'text-yellow-600' : 'text-gray-600'
+                    }`}>{budget.progress.toFixed(1)}%</span></span>
+                    <span>{formatCurrency(budget.spent)} / {formatCurrency(budget.amount)}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${
                         budget.progress >= 100 ? 'bg-red-600' :
@@ -576,7 +375,7 @@ const Budgets: React.FC = () => {
                       style={{ width: `${Math.min(budget.progress, 100)}%` }}
                     ></div>
                   </div>
-                                      <div className="mt-2 text-sm text-gray-500">
+                  <div className="mt-2 text-sm text-gray-500">
                     Sisa: {formatCurrency(budget.remaining)}
                     {budget.progress >= 100 && (
                       <span className="ml-2 text-red-600 font-medium">
@@ -584,13 +383,12 @@ const Budgets: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  </div>
                 </div>
-              ))
-            )}
-          </div>
+              </div>
+            ))
+          )}
         </div>
-      )}
+      </div>
 
       {/* Create Budget Modal */}
       {showCreateModal && (
@@ -721,71 +519,6 @@ const Budgets: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Recommendations Modal */}
-      {showRecommendations && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Rekomendasi Budget</h2>
-              <button
-                onClick={() => setShowRecommendations(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              {recommendations.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Lightbulb className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <p>Belum ada rekomendasi yang tersedia</p>
-                </div>
-              ) : (
-                recommendations.map((rec, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h3 className="font-medium text-gray-900">{rec.categoryName}</h3>
-                        <p className="text-sm text-gray-600">{rec.reason}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-blue-600">
-                          {formatCurrency(rec.recommendedAmount)}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Confidence: {rec.confidence}%
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div className="text-sm text-gray-600">
-                        Rata-rata historis: {formatCurrency(rec.historicalAverage)}
-                      </div>
-                      <button
-                        onClick={() => {
-                          setFormData({
-                            ...formData,
-                            categoryId: rec.categoryId,
-                            amount: rec.recommendedAmount.toString(),
-                            name: `Budget ${rec.categoryName}`
-                          });
-                          setShowRecommendations(false);
-                          setShowCreateModal(true);
-                        }}
-                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-                      >
-                        Gunakan Rekomendasi
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
           </div>
         </div>
       )}

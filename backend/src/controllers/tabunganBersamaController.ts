@@ -740,9 +740,14 @@ export const getTabunganBersamaPeriodById = async (req: Request, res: Response) 
 // Confirm group budget period
 export const confirmTabunganBersamaPeriod = async (req: Request, res: Response) => {
   try {
+    console.log('=== CONFIRM PERIOD START ===')
     const { periodId } = req.params
     const { confirmed } = req.body
     const userId = (req as any).user.id
+    
+    console.log('Period ID:', periodId)
+    console.log('Confirmed:', confirmed)
+    console.log('User ID:', userId)
 
     // Check if user is member of the group budget
     const period = await prisma.groupBudgetPeriod.findFirst({
@@ -768,6 +773,7 @@ export const confirmTabunganBersamaPeriod = async (req: Request, res: Response) 
     }
 
     // Create or update confirmation
+    console.log('Creating/updating confirmation...')
     const confirmation = await prisma.groupBudgetPeriodConfirmation.upsert({
       where: {
         periodId_userId: {
@@ -784,6 +790,9 @@ export const confirmTabunganBersamaPeriod = async (req: Request, res: Response) 
         confirmedAt: confirmed ? new Date() : null
       }
     })
+
+    console.log('Confirmation result:', confirmation)
+    console.log('=== CONFIRM PERIOD END ===')
 
     res.json({
       message: 'Period confirmation updated successfully',
@@ -831,7 +840,14 @@ export const getTabunganBersamaPeriodConfirmations = async (req: Request, res: R
       }
     })
 
-    res.json(confirmations)
+    // Transform data to match frontend expectation
+    const transformedConfirmations = confirmations.map(confirmation => ({
+      userId: confirmation.userId,
+      name: confirmation.user.name,
+      confirmedAt: confirmation.confirmedAt
+    }))
+
+    res.json(transformedConfirmations)
   } catch (error) {
     console.error('Get tabungan bersama period confirmations error:', error)
     res.status(500).json({ message: 'Server error' })

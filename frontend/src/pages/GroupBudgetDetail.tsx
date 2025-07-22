@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Calendar, DollarSign, Users, TrendingUp } from 'lucide-react'
-import groupBudgetService, { GroupBudget, GroupBudgetPeriod, AddGroupBudgetTransactionData } from '../services/groupBudgetService'
+import groupBudgetService, { TabunganBersama, TabunganBersamaPeriod, AddTabunganBersamaTransactionData } from '../services/groupBudgetService'
 
 const GroupBudgetDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [groupBudget, setGroupBudget] = useState<GroupBudget | null>(null)
-  const [periods, setPeriods] = useState<GroupBudgetPeriod[]>([])
+  const [groupBudget, setGroupBudget] = useState<TabunganBersama | null>(null)
+  const [periods, setPeriods] = useState<TabunganBersamaPeriod[]>([])
   const [loading, setLoading] = useState(true)
   const [showTransactionModal, setShowTransactionModal] = useState(false)
-  const [selectedPeriod, setSelectedPeriod] = useState<GroupBudgetPeriod | null>(null)
-  const [transactionData, setTransactionData] = useState<AddGroupBudgetTransactionData>({
-    groupBudgetId: id || '',
+  const [selectedPeriod, setSelectedPeriod] = useState<TabunganBersamaPeriod | null>(null)
+  const [transactionData, setTransactionData] = useState<AddTabunganBersamaTransactionData>({
+    tabunganBersamaId: id || '',
     periodId: '',
     amount: 0,
     description: '',
@@ -51,14 +51,21 @@ const GroupBudgetDetail: React.FC = () => {
   const loadGroupBudgetDetail = async () => {
     try {
       setLoading(true)
+      console.log('🔍 Debug: Loading group budget detail for ID:', id)
+      
       const [budgetData, periodsData] = await Promise.all([
-        groupBudgetService.getGroupBudgetById(id!),
-        groupBudgetService.getGroupBudgetPeriods(id!)
+        groupBudgetService.getTabunganBersamaById(id!),
+        groupBudgetService.getTabunganBersamaPeriods(id!)
       ])
+      
+      console.log('🔍 Debug: Budget data:', budgetData)
+      console.log('🔍 Debug: Periods data:', periodsData)
+      
       setGroupBudget(budgetData)
       setPeriods(periodsData)
     } catch (error) {
       console.error('Error loading group budget detail:', error)
+      console.error('🔍 Debug: Error details:', error)
     } finally {
       setLoading(false)
     }
@@ -70,7 +77,7 @@ const GroupBudgetDetail: React.FC = () => {
     if (!selectedPeriod) return
 
     try {
-      const response = await groupBudgetService.addGroupBudgetTransaction({
+      const response = await groupBudgetService.addTabunganBersamaTransaction({
         ...transactionData,
         periodId: selectedPeriod.id
       })
@@ -83,12 +90,12 @@ const GroupBudgetDetail: React.FC = () => {
       }
 
       // Reload periods to get updated data
-      const updatedPeriods = await groupBudgetService.getGroupBudgetPeriods(id!)
+      const updatedPeriods = await groupBudgetService.getTabunganBersamaPeriods(id!)
       setPeriods(updatedPeriods)
 
       // Reset form
       setTransactionData({
-        groupBudgetId: id || '',
+        tabunganBersamaId: id || '',
         periodId: '',
         amount: 0,
         description: '',
@@ -125,7 +132,7 @@ const GroupBudgetDetail: React.FC = () => {
   }
 
   // Check if period is active or ended
-  const getPeriodStatus = (period: GroupBudgetPeriod) => {
+  const getPeriodStatus = (period: TabunganBersamaPeriod) => {
     const now = new Date()
     const endDate = new Date(period.endDate)
     const isEnded = now > endDate
@@ -328,12 +335,23 @@ const GroupBudgetDetail: React.FC = () => {
                   {/* Tombol konfirmasi hanya untuk user login yang belum konfirmasi */}
                   {!userConfirmation?.confirmedAt && (
                     <button
-                      className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={async () => {
-                        await groupBudgetService.confirmPeriod(period.id)
-                        const confirmations = await groupBudgetService.getPeriodConfirmations(period.id)
-                        setPeriodConfirmations(prev => ({ ...prev, [period.id]: confirmations }))
-                        alert('Konfirmasi setoran berhasil!')
+                        try {
+                          console.log('🔍 Debug: Confirming period:', period.id)
+                          await groupBudgetService.confirmPeriod(period.id)
+                          console.log('🔍 Debug: Period confirmed successfully')
+                          
+                          // Refresh confirmations data
+                          const confirmations = await groupBudgetService.getPeriodConfirmations(period.id)
+                          console.log('🔍 Debug: Updated confirmations:', confirmations)
+                          setPeriodConfirmations(prev => ({ ...prev, [period.id]: confirmations }))
+                          
+                          alert('✅ Konfirmasi setoran berhasil!')
+                        } catch (error) {
+                          console.error('🔍 Debug: Error confirming period:', error)
+                          alert(`❌ Gagal konfirmasi setoran: ${error instanceof Error ? error.message : 'Unknown error'}`)
+                        }
                       }}
                     >
                       Konfirmasi Setoran
